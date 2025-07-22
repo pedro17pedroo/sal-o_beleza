@@ -72,4 +72,10 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **Static Assets**: Frontend built to dist/public, served by Express in production
 - **Process Management**: Single Node.js process serving both API and static files
 
+## Recent Changes
+- **January 22, 2025**: Created comprehensive landing page separating customer and admin access
+- **January 22, 2025**: Implemented public booking system without authentication  
+- **January 22, 2025**: Added cash flow management with transaction tracking and financial dashboard
+- **January 22, 2025**: Fixed API routing and database schema for public appointments
+
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.
