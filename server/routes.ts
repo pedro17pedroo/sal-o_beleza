@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { insertClientSchema, insertServiceSchema, insertProfessionalSchema, insertAppointmentSchema } from "@shared/schema";
+import { insertClientSchema, insertServiceSchema, insertProfessionalSchema, insertAppointmentSchema, insertTransactionSchema } from "@shared/schema";
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
@@ -315,21 +315,111 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Mark appointment as paid
+  app.post("/api/appointments/:id/mark-paid", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const appointment = await storage.markAppointmentAsPaid(id, req.user.id);
+      if (!appointment) {
+        return res.status(404).json({ message: "Appointment not found" });
+      }
+      res.json(appointment);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to mark appointment as paid" });
+    }
+  });
+
+  // Transaction routes
+  app.get("/api/transactions", requireAuth, async (req: any, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      let transactions;
+      if (startDate && endDate) {
+        transactions = await storage.getTransactionsByDateRange(
+          new Date(startDate as string), 
+          new Date(endDate as string), 
+          req.user.id
+        );
+      } else {
+        transactions = await storage.getTransactions(req.user.id);
+      }
+      
+      res.json(transactions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  app.post("/api/transactions", requireAuth, async (req: any, res) => {
+    try {
+      const validatedData = insertTransactionSchema.parse(req.body);
+      const transaction = await storage.createTransaction(validatedData, req.user.id);
+      res.status(201).json(transaction);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to create transaction" });
+    }
+  });
+
+  app.put("/api/transactions/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertTransactionSchema.partial().parse(req.body);
+      const transaction = await storage.updateTransaction(id, validatedData, req.user.id);
+      if (!transaction) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      res.json(transaction);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to update transaction" });
+    }
+  });
+
+  app.delete("/api/transactions/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteTransaction(id, req.user.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Transaction not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete transaction" });
+    }
+  });
+
+  // Financial reports
+  app.get("/api/financial/summary", requireAuth, async (req: any, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+
+      const summary = await storage.getFinancialSummary(
+        new Date(startDate as string),
+        new Date(endDate as string),
+        req.user.id
+      );
+      
+      res.json(summary);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch financial summary" });
+    }
+  });
+
   // Dashboard stats
   app.get("/api/dashboard/stats", requireAuth, async (req: any, res) => {
     try {
       const today = new Date();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       
-      const [todayAppointments, allClients, monthlyAppointments] = await Promise.all([
+      const [todayAppointments, allClients, monthlyFinancial] = await Promise.all([
         storage.getAppointmentsByDate(today, req.user.id),
         storage.getClients(req.user.id),
-        storage.getAppointmentsByDateRange(startOfMonth, today, req.user.id)
+        storage.getFinancialSummary(startOfMonth, today, req.user.id)
       ]);
-
-      const monthlyRevenue = monthlyAppointments.reduce((sum, apt) => {
-        return sum + parseFloat(apt.servicePrice || "0");
-      }, 0);
 
       const nextAppointment = todayAppointments
         .filter(apt => new Date(apt.date) > new Date())
@@ -338,7 +428,9 @@ export function registerRoutes(app: Express): Server {
       res.json({
         todayAppointments: todayAppointments.length,
         activeClients: allClients.length,
-        monthlyRevenue,
+        monthlyRevenue: monthlyFinancial.totalRevenue,
+        monthlyExpenses: monthlyFinancial.totalExpenses,
+        monthlyNetIncome: monthlyFinancial.netIncome,
         nextAppointment: nextAppointment ? {
           time: new Date(nextAppointment.date).toLocaleTimeString('pt-BR', { 
             hour: '2-digit', 

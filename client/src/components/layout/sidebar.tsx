@@ -1,9 +1,9 @@
-import { Building2, Calendar, Users, Clipboard, Home, LogOut } from "lucide-react";
+import { Building2, Calendar, Users, Clipboard, Home, LogOut, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type View = "dashboard" | "appointments" | "clients" | "services" | "professionals";
+type View = "dashboard" | "appointments" | "clients" | "services" | "professionals" | "cashflow";
 
 interface SidebarProps {
   currentView: View;
@@ -18,6 +18,7 @@ const navigation = [
   { key: "clients" as View, label: "Clientes", icon: Users },
   { key: "services" as View, label: "Serviços", icon: Clipboard },
   { key: "professionals" as View, label: "Profissionais", icon: Users },
+  { key: "cashflow" as View, label: "Controle de Caixa", icon: DollarSign },
 ];
 
 export default function Sidebar({ currentView, onViewChange, isOpen, onToggle }: SidebarProps) {

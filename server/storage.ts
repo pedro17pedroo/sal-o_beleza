@@ -1,8 +1,8 @@
 import { 
-  users, clients, services, professionals, appointments,
+  users, clients, services, professionals, appointments, transactions,
   type User, type InsertUser, type Client, type InsertClient,
   type Service, type InsertService, type Professional, type InsertProfessional,
-  type Appointment, type InsertAppointment
+  type Appointment, type InsertAppointment, type Transaction, type InsertTransaction
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, or } from "drizzle-orm";
@@ -49,6 +49,22 @@ export interface IStorage {
   updateAppointment(id: number, appointment: Partial<InsertAppointment>, userId: number): Promise<any | undefined>;
   deleteAppointment(id: number, userId: number): Promise<boolean>;
   checkAppointmentConflict(professionalId: number, startDate: Date, endDate: Date, userId: number, excludeId?: number): Promise<boolean>;
+  markAppointmentAsPaid(appointmentId: number, userId: number): Promise<any | undefined>;
+
+  // Transaction methods
+  getTransactions(userId: number): Promise<Transaction[]>;
+  getTransactionsByDateRange(startDate: Date, endDate: Date, userId: number): Promise<Transaction[]>;
+  getTransaction(id: number, userId: number): Promise<Transaction | undefined>;
+  createTransaction(transaction: InsertTransaction, userId: number): Promise<Transaction>;
+  updateTransaction(id: number, transaction: Partial<InsertTransaction>, userId: number): Promise<Transaction | undefined>;
+  deleteTransaction(id: number, userId: number): Promise<boolean>;
+  getFinancialSummary(startDate: Date, endDate: Date, userId: number): Promise<{
+    totalRevenue: number;
+    totalExpenses: number;
+    netIncome: number;
+    revenueByCategory: { category: string; amount: number }[];
+    expensesByCategory: { category: string; amount: number }[];
+  }>;
 
   sessionStore: session.Store;
 }
@@ -414,6 +430,129 @@ export class DatabaseStorage implements IStorage {
       .where(whereClause);
 
     return conflictingAppointments.length > 0;
+  }
+
+  async markAppointmentAsPaid(appointmentId: number, userId: number): Promise<any | undefined> {
+    const appointment = await this.getAppointment(appointmentId, userId);
+    if (!appointment) return undefined;
+
+    // Update appointment payment status
+    const [updatedAppointment] = await db
+      .update(appointments)
+      .set({ paymentStatus: "paid" })
+      .where(and(eq(appointments.id, appointmentId), eq(appointments.userId, userId)))
+      .returning();
+
+    if (updatedAppointment) {
+      // Create revenue transaction
+      await this.createTransaction({
+        type: "revenue",
+        category: "service_payment",
+        amount: appointment.servicePrice,
+        description: `Pagamento do serviço: ${appointment.serviceName} - Cliente: ${appointment.clientName}`,
+        appointmentId: appointmentId,
+        transactionDate: new Date()
+      }, userId);
+
+      return await this.getAppointment(appointmentId, userId);
+    }
+    return undefined;
+  }
+
+  // Transaction methods
+  async getTransactions(userId: number): Promise<Transaction[]> {
+    return await db.select().from(transactions).where(eq(transactions.userId, userId));
+  }
+
+  async getTransactionsByDateRange(startDate: Date, endDate: Date, userId: number): Promise<Transaction[]> {
+    return await db
+      .select()
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          gte(transactions.transactionDate, startDate),
+          lte(transactions.transactionDate, endDate)
+        )
+      );
+  }
+
+  async getTransaction(id: number, userId: number): Promise<Transaction | undefined> {
+    const [transaction] = await db
+      .select()
+      .from(transactions)
+      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+    return transaction || undefined;
+  }
+
+  async createTransaction(transaction: InsertTransaction, userId: number): Promise<Transaction> {
+    const [newTransaction] = await db
+      .insert(transactions)
+      .values({ ...transaction, userId })
+      .returning();
+    return newTransaction;
+  }
+
+  async updateTransaction(id: number, transaction: Partial<InsertTransaction>, userId: number): Promise<Transaction | undefined> {
+    const [updatedTransaction] = await db
+      .update(transactions)
+      .set(transaction)
+      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
+      .returning();
+    return updatedTransaction || undefined;
+  }
+
+  async deleteTransaction(id: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(transactions)
+      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getFinancialSummary(startDate: Date, endDate: Date, userId: number): Promise<{
+    totalRevenue: number;
+    totalExpenses: number;
+    netIncome: number;
+    revenueByCategory: { category: string; amount: number }[];
+    expensesByCategory: { category: string; amount: number }[];
+  }> {
+    const allTransactions = await this.getTransactionsByDateRange(startDate, endDate, userId);
+    
+    const revenues = allTransactions.filter(t => t.type === "revenue");
+    const expenses = allTransactions.filter(t => t.type === "expense");
+    
+    const totalRevenue = revenues.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const totalExpenses = expenses.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const netIncome = totalRevenue - totalExpenses;
+
+    // Group by category
+    const revenueByCategory = revenues.reduce((acc, t) => {
+      const existing = acc.find(item => item.category === t.category);
+      if (existing) {
+        existing.amount += parseFloat(t.amount);
+      } else {
+        acc.push({ category: t.category, amount: parseFloat(t.amount) });
+      }
+      return acc;
+    }, [] as { category: string; amount: number }[]);
+
+    const expensesByCategory = expenses.reduce((acc, t) => {
+      const existing = acc.find(item => item.category === t.category);
+      if (existing) {
+        existing.amount += parseFloat(t.amount);
+      } else {
+        acc.push({ category: t.category, amount: parseFloat(t.amount) });
+      }
+      return acc;
+    }, [] as { category: string; amount: number }[]);
+
+    return {
+      totalRevenue,
+      totalExpenses,
+      netIncome,
+      revenueByCategory,
+      expensesByCategory
+    };
   }
 }
 

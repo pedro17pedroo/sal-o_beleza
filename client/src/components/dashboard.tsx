@@ -56,7 +56,7 @@ export default function Dashboard() {
                 {statsLoading ? (
                   <Skeleton className="h-8 w-16 mt-2" />
                 ) : (
-                  <p className="text-2xl font-bold text-slate-800">{stats?.todayAppointments || 0}</p>
+                  <p className="text-2xl font-bold text-slate-800">{(stats as any)?.todayAppointments || 0}</p>
                 )}
               </div>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -74,7 +74,7 @@ export default function Dashboard() {
                 {statsLoading ? (
                   <Skeleton className="h-8 w-16 mt-2" />
                 ) : (
-                  <p className="text-2xl font-bold text-slate-800">{stats?.activeClients || 0}</p>
+                  <p className="text-2xl font-bold text-slate-800">{(stats as any)?.activeClients || 0}</p>
                 )}
               </div>
               <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
@@ -92,8 +92,8 @@ export default function Dashboard() {
                 {statsLoading ? (
                   <Skeleton className="h-8 w-24 mt-2" />
                 ) : (
-                  <p className="text-2xl font-bold text-slate-800">
-                    {formatCurrency(stats?.monthlyRevenue || 0)}
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency((stats as any)?.monthlyRevenue || 0)}
                   </p>
                 )}
               </div>
@@ -108,20 +108,17 @@ export default function Dashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Próximo Agendamento</p>
+                <p className="text-sm font-medium text-slate-600">Lucro Líquido</p>
                 {statsLoading ? (
-                  <Skeleton className="h-6 w-20 mt-2" />
-                ) : stats?.nextAppointment ? (
-                  <>
-                    <p className="text-lg font-semibold text-slate-800">{stats.nextAppointment.time}</p>
-                    <p className="text-sm text-slate-600">{stats.nextAppointment.clientName}</p>
-                  </>
+                  <Skeleton className="h-8 w-24 mt-2" />
                 ) : (
-                  <p className="text-sm text-slate-600">Nenhum agendamento</p>
+                  <p className={`text-2xl font-bold ${((stats as any)?.monthlyNetIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency((stats as any)?.monthlyNetIncome || 0)}
+                  </p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-6 h-6 text-amber-600" />
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${((stats as any)?.monthlyNetIncome || 0) >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                <DollarSign className={`w-6 h-6 ${((stats as any)?.monthlyNetIncome || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`} />
               </div>
             </div>
           </CardContent>
@@ -154,9 +151,9 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-            ) : todayAppointments && todayAppointments.length > 0 ? (
+            ) : todayAppointments && (todayAppointments as any[]).length > 0 ? (
               <div className="space-y-4">
-                {todayAppointments.map((appointment: any) => (
+                {(todayAppointments as any[]).map((appointment: any) => (
                   <div key={appointment.id} className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                     <div className="text-center min-w-[60px]">
                       <p className="text-sm font-medium text-slate-800">{formatTime(appointment.date)}</p>

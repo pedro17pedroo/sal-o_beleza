@@ -50,6 +50,19 @@ export const appointments = pgTable("appointments", {
   endDate: timestamp("end_date").notNull(),
   notes: text("notes"),
   status: text("status").notNull().default("confirmed"), // confirmed, pending, cancelled
+  paymentStatus: text("payment_status").notNull().default("pending"), // pending, paid, cancelled
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // revenue, expense
+  category: text("category").notNull(), // service_payment, salary, supplies, rent, utilities, other
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  appointmentId: integer("appointment_id").references(() => appointments.id), // Only for revenue from services
+  userId: integer("user_id").notNull().references(() => users.id),
+  transactionDate: timestamp("transaction_date").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -59,6 +72,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),
   professionals: many(professionals),
   appointments: many(appointments),
+  transactions: many(transactions),
 }));
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -85,7 +99,7 @@ export const professionalsRelations = relations(professionals, ({ one, many }) =
   appointments: many(appointments),
 }));
 
-export const appointmentsRelations = relations(appointments, ({ one }) => ({
+export const appointmentsRelations = relations(appointments, ({ one, many }) => ({
   client: one(clients, {
     fields: [appointments.clientId],
     references: [clients.id],
@@ -100,6 +114,18 @@ export const appointmentsRelations = relations(appointments, ({ one }) => ({
   }),
   user: one(users, {
     fields: [appointments.userId],
+    references: [users.id],
+  }),
+  transactions: many(transactions),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  appointment: one(appointments, {
+    fields: [transactions.appointmentId],
+    references: [appointments.id],
+  }),
+  user: one(users, {
+    fields: [transactions.userId],
     references: [users.id],
   }),
 }));
@@ -137,6 +163,12 @@ export const insertAppointmentSchema = createInsertSchema(appointments).omit({
   endDate: true,
 });
 
+export const insertTransactionSchema = createInsertSchema(transactions).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -148,3 +180,5 @@ export type Professional = typeof professionals.$inferSelect;
 export type InsertProfessional = z.infer<typeof insertProfessionalSchema>;
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
