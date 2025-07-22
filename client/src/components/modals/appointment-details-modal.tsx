@@ -23,7 +23,7 @@ export default function AppointmentDetailsModal({
   appointment 
 }: AppointmentDetailsModalProps) {
   const [editMode, setEditMode] = useState(false);
-  const [selectedProfessional, setSelectedProfessional] = useState(appointment?.professionalName || "");
+  const [selectedProfessional, setSelectedProfessional] = useState(appointment?.professionalName || "none");
   const [notes, setNotes] = useState(appointment?.notes || "");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -93,15 +93,15 @@ export default function AppointmentDetailsModal({
 
   const updateAppointmentMutation = useMutation({
     mutationFn: async () => {
-      // Find professional ID by name
+      // Find professional ID by name, or set to null if "none" is selected
       const professionalList = Array.isArray(professionals) ? professionals : [];
-      const professional = professionalList.find((p: any) => p.name === selectedProfessional);
+      const professional = selectedProfessional === "none" ? null : professionalList.find((p: any) => p.name === selectedProfessional);
       
       const response = await fetch(`/api/appointments/${appointment.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          professionalId: professional?.id,
+          professionalId: professional?.id || null,
           notes: notes.trim() || undefined
         })
       });
@@ -262,7 +262,7 @@ export default function AppointmentDetailsModal({
                   <SelectValue placeholder="Selecionar profissional" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem profissional atribuído</SelectItem>
+                  <SelectItem value="none">Sem profissional atribuído</SelectItem>
                   {Array.isArray(professionals) && professionals.map((professional: any) => (
                     <SelectItem key={professional.id} value={professional.name}>
                       {professional.name} - {professional.specialty}
