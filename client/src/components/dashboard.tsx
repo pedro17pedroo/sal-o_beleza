@@ -7,6 +7,7 @@ import { useState } from "react";
 import ClientModal from "@/components/modals/client-modal";
 import ServiceModal from "@/components/modals/service-modal";
 import AppointmentModal from "@/components/modals/appointment-modal";
+import { formatCurrency } from "@/lib/format";
 
 export default function Dashboard() {
   const [clientModalOpen, setClientModalOpen] = useState(false);
@@ -21,12 +22,7 @@ export default function Dashboard() {
     queryKey: ["/api/appointments", { date: new Date().toISOString().split('T')[0] }],
   });
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('pt-BR', {
