@@ -92,5 +92,9 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **January 22, 2025**: Implemented real-time state management with automatic data refresh every 30 seconds
 - **January 22, 2025**: Added comprehensive responsive design with mobile-first approach and adaptive layouts
 - **January 22, 2025**: Enhanced UI with mobile cards for table data and improved navigation for all screen sizes
+- **January 22, 2025**: Fixed duplicate "Novo Agendamento" button in appointments calendar interface
+- **January 22, 2025**: Implemented automatic data refresh in appointment details modal after edits
+- **January 22, 2025**: Added smart button logic based on appointment status and payment status
+- **January 22, 2025**: Enhanced appointment details with payment status badges and conditional button visibility
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.

@@ -28,6 +28,21 @@ export default function AppointmentDetailsModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch the latest appointment data to keep it updated
+  const { data: currentAppointment } = useQuery({
+    queryKey: ["/api/appointments", appointment?.id],
+    queryFn: async () => {
+      if (!appointment?.id) return null;
+      const response = await fetch(`/api/appointments/${appointment.id}`);
+      if (!response.ok) throw new Error('Failed to fetch appointment');
+      return response.json();
+    },
+    enabled: open && !!appointment?.id,
+  });
+
+  // Use current appointment data if available, fallback to prop
+  const displayAppointment = currentAppointment || appointment;
+
   // Get professionals for assignment
   const { data: professionals } = useQuery({
     queryKey: ["/api/professionals"],
@@ -76,11 +91,11 @@ export default function AppointmentDetailsModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
       toast({
         title: "Status atualizado",
         description: "O status do agendamento foi atualizado com sucesso.",
       });
-      onOpenChange(false);
     },
     onError: () => {
       toast({
@@ -110,6 +125,7 @@ export default function AppointmentDetailsModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
       toast({
         title: "Agendamento atualizado",
         description: "As alterações foram salvas com sucesso.",
@@ -160,6 +176,7 @@ export default function AppointmentDetailsModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
       toast({
         title: "Pagamento registrado",
         description: "O pagamento foi marcado como pago.",
@@ -174,9 +191,9 @@ export default function AppointmentDetailsModal({
     }
   });
 
-  if (!appointment) return null;
+  if (!displayAppointment) return null;
 
-  const dateTime = formatDateTime(appointment.date);
+  const dateTime = formatDateTime(displayAppointment.date);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -191,9 +208,16 @@ export default function AppointmentDetailsModal({
         <div className="space-y-6">
           {/* Status Badge */}
           <div className="flex justify-between items-start">
-            <Badge className={getStatusColor(appointment.status)}>
-              {getStatusText(appointment.status)}
-            </Badge>
+            <div className="flex gap-2">
+              <Badge className={getStatusColor(displayAppointment.status)}>
+                {getStatusText(displayAppointment.status)}
+              </Badge>
+              {displayAppointment.paymentStatus === 'paid' && (
+                <Badge className="bg-green-100 text-green-700 border-green-200">
+                  💰 Pago
+                </Badge>
+              )}
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -213,10 +237,10 @@ export default function AppointmentDetailsModal({
                 Cliente
               </h3>
               <div className="space-y-2">
-                <p className="font-medium">{appointment.clientName}</p>
+                <p className="font-medium">{displayAppointment.clientName}</p>
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Phone className="w-4 h-4" />
-                  {appointment.clientPhone}
+                  {displayAppointment.clientPhone}
                 </div>
               </div>
             </div>
@@ -240,11 +264,11 @@ export default function AppointmentDetailsModal({
             <div className="bg-slate-50 p-4 rounded-lg">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium">{appointment.serviceName}</p>
-                  <p className="text-sm text-slate-600">{appointment.serviceDuration} minutos</p>
+                  <p className="font-medium">{displayAppointment.serviceName}</p>
+                  <p className="text-sm text-slate-600">{displayAppointment.serviceDuration} minutos</p>
                 </div>
                 <p className="font-semibold text-slate-800">
-                  {formatCurrency(appointment.servicePrice)}
+                  {formatCurrency(displayAppointment.servicePrice)}
                 </p>
               </div>
             </div>
@@ -272,7 +296,7 @@ export default function AppointmentDetailsModal({
               </Select>
             ) : (
               <p className="text-slate-600">
-                {appointment.professionalName || "Nenhum profissional atribuído"}
+                {displayAppointment.professionalName || "Nenhum profissional atribuído"}
               </p>
             )}
           </div>
@@ -289,7 +313,7 @@ export default function AppointmentDetailsModal({
               />
             ) : (
               <p className="text-slate-600 bg-slate-50 p-3 rounded-lg min-h-[60px]">
-                {appointment.notes || "Nenhuma observação"}
+                {displayAppointment.notes || "Nenhuma observação"}
               </p>
             )}
           </div>
@@ -306,7 +330,8 @@ export default function AppointmentDetailsModal({
               </Button>
             ) : (
               <>
-                {appointment.status === 'pending' && (
+                {/* Confirmar/Rejeitar - apenas para agendamentos pendentes */}
+                {displayAppointment.status === 'pending' && (
                   <>
                     <Button
                       onClick={() => updateStatusMutation.mutate('confirmed')}
@@ -328,7 +353,8 @@ export default function AppointmentDetailsModal({
                   </>
                 )}
                 
-                {appointment.status === 'confirmed' && (
+                {/* Marcar como Concluído - apenas para agendamentos confirmados */}
+                {displayAppointment.status === 'confirmed' && (
                   <Button
                     onClick={() => updateStatusMutation.mutate('completed')}
                     disabled={updateStatusMutation.isPending}
@@ -339,7 +365,9 @@ export default function AppointmentDetailsModal({
                   </Button>
                 )}
 
-                {(appointment.status === 'completed' || appointment.status === 'confirmed') && (
+                {/* Marcar como Pago - apenas para agendamentos concluídos ou confirmados, e que ainda não foram pagos */}
+                {(displayAppointment.status === 'completed' || displayAppointment.status === 'confirmed') && 
+                 displayAppointment.paymentStatus !== 'paid' && (
                   <Button
                     onClick={() => markAsPaidMutation.mutate()}
                     disabled={markAsPaidMutation.isPending}
@@ -350,15 +378,18 @@ export default function AppointmentDetailsModal({
                   </Button>
                 )}
 
-                <Button
-                  variant="destructive"
-                  onClick={() => deleteAppointmentMutation.mutate()}
-                  disabled={deleteAppointmentMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Cancelar
-                </Button>
+                {/* Cancelar - apenas se o agendamento não está concluído */}
+                {displayAppointment.status !== 'completed' && displayAppointment.status !== 'cancelled' && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteAppointmentMutation.mutate()}
+                    disabled={deleteAppointmentMutation.isPending}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Cancelar
+                  </Button>
+                )}
               </>
             )}
           </div>
