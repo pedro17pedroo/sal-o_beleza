@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency, parseCurrency } from "@/lib/format";
 
 const transactionSchema = z.object({
   type: z.enum(["revenue", "expense"]),
@@ -81,7 +82,7 @@ export default function CashFlowManager() {
         "/api/transactions",
         {
           ...data,
-          amount: parseFloat(data.amount),
+          amount: parseCurrency(data.amount),
           transactionDate: new Date(data.transactionDate).toISOString(),
         }
       );
@@ -107,12 +108,7 @@ export default function CashFlowManager() {
     },
   });
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+
 
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });

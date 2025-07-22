@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { insertClientSchema, type Client, type InsertClient } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatPhone, validateAngolanPhone } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -144,7 +145,14 @@ export default function ClientModal({ open, onOpenChange, client }: ClientModalP
                 <FormItem>
                   <FormLabel>Telefone</FormLabel>
                   <FormControl>
-                    <Input placeholder="(11) 99999-9999" {...field} />
+                    <Input 
+                      placeholder="+244 923 456 789" 
+                      {...field}
+                      onChange={(e) => {
+                        const formatted = formatPhone(e.target.value);
+                        field.onChange(formatted);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -161,7 +169,8 @@ export default function ClientModal({ open, onOpenChange, client }: ClientModalP
                     <Input 
                       type="email" 
                       placeholder="cliente@email.com" 
-                      {...field} 
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />

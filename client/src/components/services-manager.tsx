@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import ServiceModal from "@/components/modals/service-modal";
+import { formatCurrency } from "@/lib/format";
 import type { Service } from "@shared/schema";
 
 export default function ServicesManager() {
@@ -49,13 +50,7 @@ export default function ServicesManager() {
     }
   };
 
-  const formatCurrency = (value: string | number) => {
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(numValue);
-  };
+
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -102,7 +97,7 @@ export default function ServicesManager() {
                 </div>
               ))}
             </div>
-          ) : services && services.length > 0 ? (
+          ) : services && Array.isArray(services) && services.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {services.map((service: Service) => (
                 <Card key={service.id} className="hover:shadow-md transition-shadow">

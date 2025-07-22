@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { insertServiceSchema, type Service, type InsertService } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency, parseCurrency } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -163,14 +164,17 @@ export default function ServiceModal({ open, onOpenChange, service }: ServiceMod
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Preço (R$)</FormLabel>
+                  <FormLabel>Preço (Kz)</FormLabel>
                   <FormControl>
                     <Input 
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      placeholder="120.00" 
+                      type="text" 
+                      placeholder="12.000,00" 
                       {...field}
+                      onChange={(e) => {
+                        // Format input as currency while typing
+                        const value = e.target.value.replace(/[^\d,]/g, '');
+                        field.onChange(value);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />

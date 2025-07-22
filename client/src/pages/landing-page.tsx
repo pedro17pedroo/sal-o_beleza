@@ -134,9 +134,9 @@ export default function LandingPage() {
             <div>
               <h5 className="font-semibold mb-4">Contato</h5>
               <div className="space-y-2 text-gray-400">
-                <p>📞 (11) 99999-9999</p>
-                <p>📧 contato@bellastudio.com</p>
-                <p>📍 Rua da Beleza, 123 - São Paulo</p>
+                <p>📞 +244 923 456 789</p>
+                <p>📧 contato@bellastudio.co.ao</p>
+                <p>📍 Rua da Beleza, 123 - Luanda</p>
               </div>
             </div>
             

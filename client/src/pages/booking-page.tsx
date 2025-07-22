@@ -14,6 +14,7 @@ import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency, formatPhone } from "@/lib/format";
 
 const bookingSchema = z.object({
   clientName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -392,7 +393,15 @@ export default function BookingPage() {
                           <FormControl>
                             <div className="relative">
                               <Phone className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                              <Input placeholder="(11) 99999-9999" className="pl-10" {...field} />
+                              <Input 
+                                placeholder="+244 923 456 789" 
+                                className="pl-10" 
+                                {...field}
+                                onChange={(e) => {
+                                  const formatted = formatPhone(e.target.value);
+                                  field.onChange(formatted);
+                                }}
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
