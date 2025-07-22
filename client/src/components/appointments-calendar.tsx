@@ -246,14 +246,17 @@ export default function AppointmentsCalendar() {
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                appointment.status === 'confirmed' 
-                                  ? 'bg-green-100 text-green-700'
-                                  : appointment.status === 'pending'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-red-100 text-red-700'
+                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                appointment.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                appointment.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                appointment.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-100 text-gray-700'
                               }`}>
-                                {appointment.status === 'confirmed' ? 'Confirmado' : 
-                                 appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                                {appointment.status === 'confirmed' ? 'Confirmado' :
+                                 appointment.status === 'pending' ? 'Pendente' :
+                                 appointment.status === 'cancelled' ? 'Cancelado' :
+                                 appointment.status === 'completed' ? 'Concluído' :
+                                 'Desconhecido'}
                               </span>
                             </div>
                           </div>
@@ -299,14 +302,17 @@ export default function AppointmentsCalendar() {
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                appointment.status === 'confirmed' 
-                                  ? 'bg-green-100 text-green-700'
-                                  : appointment.status === 'pending'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-red-100 text-red-700'
+                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                appointment.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                                appointment.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                appointment.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-100 text-gray-700'
                               }`}>
-                                {appointment.status === 'confirmed' ? 'Confirmado' : 
-                                 appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                                {appointment.status === 'confirmed' ? 'Confirmado' :
+                                 appointment.status === 'pending' ? 'Pendente' :
+                                 appointment.status === 'cancelled' ? 'Cancelado' :
+                                 appointment.status === 'completed' ? 'Concluído' :
+                                 'Desconhecido'}
                               </span>
                             </div>
                           </div>
