@@ -1,0 +1,164 @@
+Documento de Requisitos do Produto (PRD) - MVP para Sistema de Gestão de Salão de Beleza
+1. Visão Geral
+Nome do Produto: Sistema de Gestão de Salão de Beleza (SGSB)Versão: 1.0 (MVP)Data: 22 de Julho de 2025Objetivo: Criar um sistema web simples e eficiente para gerenciar agendamentos, clientes e serviços de um salão de beleza, otimizando a operação diária e melhorando a experiência do cliente.Público-Alvo: Pequenos e médios salões de beleza, com foco em proprietários, recepcionistas e profissionais autônomos.
+
+2. Objetivos do MVP
+
+Gerenciamento de Agendamentos: Permitir o cadastro, visualização e edição de agendamentos de clientes.  
+Gestão de Clientes: Criar e consultar cadastros básicos de clientes.  
+Controle de Serviços: Registrar serviços oferecidos e seus preços.  
+Usabilidade: Interface simples e intuitiva para usuários com pouca experiência tecnológica.  
+Escalabilidade: Estrutura que permita adição de funcionalidades futuras (ex.: relatórios, financeiro).
+
+
+3. Requisitos Funcionais
+3.1. Cadastro de Clientes
+
+Funcionalidade: Cadastro e consulta de clientes.  
+Detalhes:  
+Campos: Nome, telefone, e-mail (opcional).  
+Listagem de clientes com busca por nome ou telefone.  
+Edição e exclusão de cadastros.
+
+
+Critérios de Aceitação:  
+O sistema deve permitir o cadastro de um cliente em até 30 segundos.  
+A busca deve retornar resultados em menos de 2 segundos.
+
+
+
+3.2. Gerenciamento de Agendamentos
+
+Funcionalidade: Criar, visualizar, editar e cancelar agendamentos.  
+Detalhes:  
+Campos: Cliente, profissional, serviço, data, horário, observações (opcional).  
+Visualização em formato de agenda (diária ou semanal).  
+Notificação visual de conflitos de horário.
+
+
+Critérios de Aceitação:  
+Agendamentos devem ser criados em menos de 1 minuto.  
+Conflitos de horário devem ser sinalizados imediatamente.
+
+
+
+3.3. Cadastro de Serviços
+
+Funcionalidade: Registrar serviços disponíveis e seus preços.  
+Detalhes:  
+Campos: Nome do serviço, duração, preço.  
+Listagem de serviços com opção de edição e exclusão.
+
+
+Critérios de Aceitação:  
+O sistema deve permitir adicionar um serviço em até 20 segundos.  
+A lista de serviços deve ser exibida em ordem alfabética.
+
+
+
+3.4. Autenticação de Usuário
+
+Funcionalidade: Login básico para acesso ao sistema.  
+Detalhes:  
+Campos: E-mail e senha.  
+Recuperação de senha (via e-mail, opcional no MVP).
+
+
+Critérios de Aceitação:  
+Login deve ser concluído em até 5 segundos.  
+Apenas usuários autenticados podem acessar o sistema.
+
+
+
+
+4. Requisitos Não-Funcionais
+
+Usabilidade: Interface clara, com botões e menus intuitivos, otimizada para uso em desktop e dispositivos móveis (responsiva).  
+Desempenho: Tempo de resposta para operações (cadastro, busca, edição) inferior a 2 segundos.  
+Segurança: Dados de clientes armazenados com criptografia básica (ex.: hashed passwords).  
+Tecnologia:  
+Frontend: HTML, CSS, JavaScript (React com Tailwind CSS).  
+Backend: Node.js com Express e banco de dados relacional (SQLite para o MVP).  
+Hospedagem: Plataforma escalável (ex.: Render ou Vercel).
+
+
+Compatibilidade: Suporte aos navegadores Chrome, Firefox e Safari (últimas versões).
+
+
+5. Escopo do MVP
+5.1. Incluído no MVP
+
+Cadastro e consulta de clientes.  
+Agendamento de serviços com verificação de conflitos de horário.  
+Cadastro e listagem de serviços.  
+Interface web responsiva.  
+Autenticação básica de usuário.
+
+5.2. Excluído do MVP
+
+Gestão financeira (controle de pagamentos, comissões).  
+Relatórios ou dashboards analíticos.  
+Integração com WhatsApp ou outras ferramentas de comunicação.  
+Aplicativo mobile nativo.  
+Funcionalidades avançadas de notificações (e-mail ou SMS).
+
+
+6. Fluxo de Uso
+
+Login: O usuário (dono do salão ou recepcionista) faz login com e-mail e senha.  
+Dashboard Inicial: Exibe agenda do dia com agendamentos.  
+Cadastrar Cliente: Adiciona novo cliente com nome e telefone.  
+Criar Agendamento: Seleciona cliente, serviço, profissional, data e horário.  
+Gerenciar Serviços: Adiciona ou edita serviços disponíveis.  
+Visualizar Agenda: Navega entre dias ou semanas para verificar compromissos.
+
+
+7. Wireframe Básico
+
+Tela de Login: Campos para e-mail e senha, botão de login.  
+Dashboard: Agenda diária (tabela com horários), botão para novo agendamento.  
+Tela de Clientes: Lista de clientes com barra de busca, botão para novo cadastro.  
+Tela de Serviços: Lista de serviços com preços e duração, botão para adicionar/editar.  
+Tela de Agendamento: Formulário com seleção de cliente, serviço, profissional, data e horário.
+
+
+8. Riscos e Mitigações
+
+Risco: Interface confusa para usuários com pouca experiência.  
+Mitigação: Realizar testes de usabilidade com 3-5 usuários reais antes do lançamento.
+
+
+Risco: Conflitos de horário não detectados.  
+Mitigação: Implementar validação robusta no backend para checar sobreposições.
+
+
+Risco: Escalabilidade do banco SQLite para múltiplos usuários.  
+Mitigação: Estruturar o banco para fácil migração para PostgreSQL no futuro.
+
+
+
+
+9. Cronograma Estimado
+
+Planejamento e Design: 1 semana.  
+Desenvolvimento Frontend e Backend: 3 semanas.  
+Testes e Ajustes: 1 semana.  
+Lançamento do MVP: 5 semanas a partir do início.
+
+
+10. Métricas de Sucesso
+
+Adoção: Pelo menos 3 salões utilizando o sistema em 1 mês após o lançamento.  
+Satisfação: 80% dos usuários reportam facilidade de uso em pesquisa pós-lançamento.  
+Performance: 95% das operações completadas em menos de 2 segundos.
+
+
+11. Próximos Passos
+
+Após validação do MVP, implementar:  
+Gestão financeira (pagamentos e comissões).  
+Notificações automáticas para clientes (e-mail ou WhatsApp).  
+Relatórios de desempenho do salão.
+
+
+Coletar feedback dos usuários iniciais para priorizar melhorias.
