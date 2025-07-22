@@ -189,6 +189,11 @@ export default function AppointmentDetailsModal({
         title: "Pagamento registrado",
         description: "O pagamento foi marcado como pago.",
       });
+      
+      // Fechar o modal automaticamente após marcar como pago
+      setTimeout(() => {
+        onOpenChange(false);
+      }, 1000); // Aguarda 1 segundo para mostrar o toast antes de fechar
     },
     onError: () => {
       toast({
@@ -386,8 +391,8 @@ export default function AppointmentDetailsModal({
                   </Button>
                 )}
 
-                {/* Cancelar - apenas se o agendamento não está concluído */}
-                {displayAppointment.status !== 'completed' && displayAppointment.status !== 'cancelled' && (
+                {/* Cancelar - apenas se o agendamento não está concluído e não foi pago */}
+                {displayAppointment.status !== 'completed' && displayAppointment.status !== 'cancelled' && displayAppointment.paymentStatus !== 'paid' && (
                   <Button
                     variant="destructive"
                     onClick={() => deleteAppointmentMutation.mutate()}

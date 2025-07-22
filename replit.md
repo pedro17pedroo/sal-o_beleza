@@ -99,5 +99,7 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **January 22, 2025**: Fixed appointment cancellation error - removed JSON parsing from empty DELETE responses
 - **January 22, 2025**: Implemented automatic modal closure when appointment is rejected/cancelled
 - **January 22, 2025**: Enhanced button visibility - Confirmar/Rejeitar buttons disappear after status change
+- **January 22, 2025**: Added automatic modal closure when payment is marked as paid
+- **January 22, 2025**: Enhanced Cancelar button logic - disappears when appointment is paid
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.
