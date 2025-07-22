@@ -1,13 +1,14 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { insertProfessionalSchema, type Professional, type InsertProfessional } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { insertProfessionalSchema, type InsertProfessional, type Professional } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -23,96 +24,126 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 interface ProfessionalModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  professional?: Professional | null;
+  isOpen: boolean;
+  onClose: () => void;
+  professional?: Professional;
+  mode: "create" | "edit";
 }
 
-export default function ProfessionalModal({ open, onOpenChange, professional }: ProfessionalModalProps) {
-  const { toast } = useToast();
-  const isEditing = !!professional;
+const formSchema = insertProfessionalSchema;
 
-  const form = useForm<InsertProfessional>({
-    resolver: zodResolver(insertProfessionalSchema),
+export function ProfessionalModal({ isOpen, onClose, professional, mode }: ProfessionalModalProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<Omit<InsertProfessional, "userId">>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      specialty: "",
+      phone: "",
+      email: "",
     },
   });
 
   useEffect(() => {
-    if (professional) {
+    if (professional && mode === "edit") {
       form.reset({
         name: professional.name,
+        specialty: professional.specialty,
+        phone: professional.phone,
+        email: professional.email || "",
       });
-    } else {
+    } else if (mode === "create") {
       form.reset({
         name: "",
+        specialty: "",
+        phone: "",
+        email: "",
       });
     }
-  }, [professional, form]);
+  }, [professional, mode, form]);
 
-  const createProfessionalMutation = useMutation({
-    mutationFn: async (data: InsertProfessional) => {
+  const createMutation = useMutation({
+    mutationFn: async (data: Omit<InsertProfessional, "userId">) => {
       const response = await apiRequest("POST", "/api/professionals", data);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/professionals"] });
       toast({
-        title: "Profissional cadastrado",
-        description: "O profissional foi cadastrado com sucesso.",
+        title: "Sucesso",
+        description: "Profissional cadastrado com sucesso!",
       });
-      onOpenChange(false);
+      onClose();
       form.reset();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Erro ao cadastrar profissional",
-        description: error.message,
+        title: "Erro",
+        description: error.message || "Erro ao cadastrar profissional",
         variant: "destructive",
       });
     },
   });
 
-  const updateProfessionalMutation = useMutation({
-    mutationFn: async (data: InsertProfessional) => {
-      const response = await apiRequest("PUT", `/api/professionals/${professional!.id}`, data);
+  const updateMutation = useMutation({
+    mutationFn: async (data: Omit<InsertProfessional, "userId">) => {
+      const response = await apiRequest("PUT", `/api/professionals/${professional?.id}`, data);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/professionals"] });
       toast({
-        title: "Profissional atualizado",
-        description: "O profissional foi atualizado com sucesso.",
+        title: "Sucesso",
+        description: "Profissional atualizado com sucesso!",
       });
-      onOpenChange(false);
+      onClose();
+      form.reset();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Erro ao atualizar profissional",
-        description: error.message,
+        title: "Erro",
+        description: error.message || "Erro ao atualizar profissional",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: InsertProfessional) => {
-    if (isEditing) {
-      updateProfessionalMutation.mutate(data);
-    } else {
-      createProfessionalMutation.mutate(data);
+  const onSubmit = async (data: Omit<InsertProfessional, "userId">) => {
+    setIsSubmitting(true);
+    try {
+      if (mode === "create") {
+        await createMutation.mutateAsync(data);
+      } else {
+        await updateMutation.mutateAsync(data);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const isPending = createProfessionalMutation.isPending || updateProfessionalMutation.isPending;
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose();
+      form.reset();
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Editar Profissional" : "Novo Profissional"}
+            {mode === "create" ? "Cadastrar Novo Profissional" : "Editar Profissional"}
           </DialogTitle>
+          <DialogDescription>
+            {mode === "create" 
+              ? "Preencha os dados do novo profissional. Campos marcados com * são obrigatórios."
+              : "Edite os dados do profissional."
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -122,34 +153,76 @@ export default function ProfessionalModal({ open, onOpenChange, professional }: 
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
+                  <FormLabel>Nome *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Digite o nome completo" {...field} />
+                    <Input placeholder="Nome do profissional" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex space-x-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => onOpenChange(false)}
-                disabled={isPending}
+            <FormField
+              control={form.control}
+              name="specialty"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especialidade *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Cabeleireiro, Manicure, Esteticista" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="(11) 99999-9999" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>E-mail</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="email" 
+                      placeholder="profissional@email.com" 
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleClose}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                className="flex-1"
-                disabled={isPending}
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
               >
-                {isPending 
-                  ? (isEditing ? "Atualizando..." : "Salvando...") 
-                  : (isEditing ? "Atualizar" : "Salvar")
-                }
+                {isSubmitting ? "Salvando..." : (mode === "create" ? "Cadastrar" : "Salvar")}
               </Button>
             </div>
           </form>

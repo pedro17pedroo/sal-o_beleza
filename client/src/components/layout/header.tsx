@@ -2,7 +2,7 @@ import { Menu, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 
-type View = "dashboard" | "appointments" | "clients" | "services";
+type View = "dashboard" | "appointments" | "clients" | "services" | "professionals";
 
 interface HeaderProps {
   currentView: View;
@@ -14,6 +14,7 @@ const viewTitles = {
   appointments: "Calendário de Agendamentos",
   clients: "Gerenciar Clientes",
   services: "Gerenciar Serviços",
+  professionals: "Gerenciar Profissionais",
 };
 
 export default function Header({ currentView, onToggleSidebar }: HeaderProps) {

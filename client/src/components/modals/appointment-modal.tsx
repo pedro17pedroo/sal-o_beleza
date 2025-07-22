@@ -184,6 +184,9 @@ export default function AppointmentModal({ open, onOpenChange, appointment }: Ap
 
   const isPending = createAppointmentMutation.isPending || updateAppointmentMutation.isPending;
 
+  // Check if there are no professionals registered
+  const noProfessionals = !professionals || !Array.isArray(professionals) || professionals.length === 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -192,6 +195,16 @@ export default function AppointmentModal({ open, onOpenChange, appointment }: Ap
             {isEditing ? "Editar Agendamento" : "Novo Agendamento"}
           </DialogTitle>
         </DialogHeader>
+
+        {noProfessionals && !isEditing && (
+          <Alert className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Atenção:</strong> É necessário cadastrar pelo menos um profissional antes de criar agendamentos. 
+              Vá para a seção "Profissionais" para cadastrar um profissional primeiro.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -212,11 +225,11 @@ export default function AppointmentModal({ open, onOpenChange, appointment }: Ap
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {clients?.map((client: any) => (
+                        {Array.isArray(clients) ? clients.map((client: any) => (
                           <SelectItem key={client.id} value={client.id.toString()}>
                             {client.name}
                           </SelectItem>
-                        ))}
+                        )) : []}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -240,11 +253,11 @@ export default function AppointmentModal({ open, onOpenChange, appointment }: Ap
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {services?.map((service: any) => (
+                        {Array.isArray(services) ? services.map((service: any) => (
                           <SelectItem key={service.id} value={service.id.toString()}>
                             {service.name} ({service.duration}min)
                           </SelectItem>
-                        ))}
+                        )) : []}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -269,11 +282,11 @@ export default function AppointmentModal({ open, onOpenChange, appointment }: Ap
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {professionals?.map((professional: any) => (
+                      {Array.isArray(professionals) ? professionals.map((professional: any) => (
                         <SelectItem key={professional.id} value={professional.id.toString()}>
-                          {professional.name}
+                          {professional.name} - {professional.specialty}
                         </SelectItem>
-                      ))}
+                      )) : []}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -346,6 +359,7 @@ export default function AppointmentModal({ open, onOpenChange, appointment }: Ap
                       className="resize-none"
                       rows={3}
                       {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -366,7 +380,7 @@ export default function AppointmentModal({ open, onOpenChange, appointment }: Ap
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={isPending || hasConflict}
+                disabled={isPending || hasConflict || (noProfessionals && !isEditing)}
               >
                 {isPending 
                   ? (isEditing ? "Atualizando..." : "Agendando...") 

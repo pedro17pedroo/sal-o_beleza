@@ -50,11 +50,11 @@ export interface IStorage {
   deleteAppointment(id: number, userId: number): Promise<boolean>;
   checkAppointmentConflict(professionalId: number, startDate: Date, endDate: Date, userId: number, excludeId?: number): Promise<boolean>;
 
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
@@ -116,7 +116,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(clients)
       .where(and(eq(clients.id, id), eq(clients.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async searchClients(query: string, userId: number): Promise<Client[]> {
@@ -168,7 +168,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(services)
       .where(and(eq(services.id, id), eq(services.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Professional methods
@@ -205,7 +205,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(professionals)
       .where(and(eq(professionals.id, id), eq(professionals.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Appointment methods
@@ -356,7 +356,7 @@ export class DatabaseStorage implements IStorage {
       const appointmentDate = appointment.date || currentAppointment.date;
       const endDate = new Date(appointmentDate);
       endDate.setMinutes(endDate.getMinutes() + service.duration);
-      updateData.endDate = endDate;
+      (updateData as any).endDate = endDate;
     }
 
     const [updatedAppointment] = await db
@@ -375,7 +375,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(appointments)
       .where(and(eq(appointments.id, id), eq(appointments.userId, userId)));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async checkAppointmentConflict(

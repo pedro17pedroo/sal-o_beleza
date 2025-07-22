@@ -33,6 +33,9 @@ export const services = pgTable("services", {
 export const professionals = pgTable("professionals", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  specialty: text("specialty").notNull(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  email: text("email"),
   userId: integer("user_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

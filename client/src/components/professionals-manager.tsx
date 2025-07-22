@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import ProfessionalModal from "@/components/modals/professional-modal";
+import { ProfessionalModal } from "@/components/modals/professional-modal";
 import type { Professional } from "@shared/schema";
 
 export default function ProfessionalsManager() {
@@ -14,7 +14,7 @@ export default function ProfessionalsManager() {
   const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
   const { toast } = useToast();
 
-  const { data: professionals, isLoading } = useQuery({
+  const { data: professionals = [], isLoading } = useQuery({
     queryKey: ["/api/professionals"],
   });
 
@@ -47,6 +47,16 @@ export default function ProfessionalsManager() {
     if (confirm("Tem certeza que deseja excluir este profissional?")) {
       deleteProfessionalMutation.mutate(id);
     }
+  };
+
+  const handleCreateNew = () => {
+    setEditingProfessional(null);
+    setProfessionalModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setProfessionalModalOpen(false);
+    setEditingProfessional(null);
   };
 
   const getInitials = (name: string) => {
@@ -85,7 +95,7 @@ export default function ProfessionalsManager() {
                 </div>
               ))}
             </div>
-          ) : professionals && professionals.length > 0 ? (
+          ) : Array.isArray(professionals) && professionals.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {professionals.map((professional: Professional) => (
                 <Card key={professional.id} className="hover:shadow-md transition-shadow">
@@ -97,7 +107,11 @@ export default function ProfessionalsManager() {
                             {getInitials(professional.name)}
                           </span>
                         </div>
-                        <h3 className="font-semibold text-slate-800">{professional.name}</h3>
+                        <div>
+                          <h3 className="font-semibold text-slate-800">{professional.name}</h3>
+                          <p className="text-sm text-slate-500">{professional.specialty}</p>
+                          <p className="text-xs text-slate-400">{professional.phone}</p>
+                        </div>
                       </div>
                       <div className="flex space-x-2">
                         <Button
@@ -139,12 +153,10 @@ export default function ProfessionalsManager() {
       </Card>
 
       <ProfessionalModal 
-        open={professionalModalOpen} 
-        onOpenChange={(open) => {
-          setProfessionalModalOpen(open);
-          if (!open) setEditingProfessional(null);
-        }}
-        professional={editingProfessional}
+        isOpen={professionalModalOpen} 
+        onClose={handleCloseModal}
+        professional={editingProfessional || undefined}
+        mode={editingProfessional ? "edit" : "create"}
       />
     </div>
   );

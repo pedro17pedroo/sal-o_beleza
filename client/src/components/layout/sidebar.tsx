@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type View = "dashboard" | "appointments" | "clients" | "services";
+type View = "dashboard" | "appointments" | "clients" | "services" | "professionals";
 
 interface SidebarProps {
   currentView: View;
@@ -17,6 +17,7 @@ const navigation = [
   { key: "appointments" as View, label: "Agendamentos", icon: Calendar },
   { key: "clients" as View, label: "Clientes", icon: Users },
   { key: "services" as View, label: "Serviços", icon: Clipboard },
+  { key: "professionals" as View, label: "Profissionais", icon: Users },
 ];
 
 export default function Sidebar({ currentView, onViewChange, isOpen, onToggle }: SidebarProps) {
