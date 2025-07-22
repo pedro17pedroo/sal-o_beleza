@@ -48,7 +48,7 @@ export default function HomePage() {
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
         
-        <div className="p-6">
+        <div className="container-responsive py-4 sm:py-6">
           {renderView()}
         </div>
       </main>

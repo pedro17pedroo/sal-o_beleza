@@ -143,17 +143,29 @@ export default function AppointmentsCalendar() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 container-responsive">
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
-            <div className="flex items-center space-x-4">
-              <CardTitle>Calendário de Agendamentos</CardTitle>
-              <div className="flex items-center space-x-2">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+              <CardTitle className="text-responsive-lg">Calendário de Agendamentos</CardTitle>
+              <Button 
+                onClick={() => setAppointmentModalOpen(true)}
+                className="w-full sm:w-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Agendamento
+              </Button>
+            </div>
+            
+            {/* View Toggle Buttons */}
+            <div className="flex flex-wrap gap-2 sm:gap-1">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-1 w-full sm:w-auto">
                 <Button
                   variant={view === "daily" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setView("daily")}
+                  className="text-xs sm:text-sm"
                 >
                   Diário
                 </Button>
@@ -161,6 +173,7 @@ export default function AppointmentsCalendar() {
                   variant={view === "weekly" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setView("weekly")}
+                  className="text-xs sm:text-sm"
                 >
                   Semanal
                 </Button>
@@ -168,6 +181,7 @@ export default function AppointmentsCalendar() {
                   variant={view === "monthly" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setView("monthly")}
+                  className="text-xs sm:text-sm"
                 >
                   Mensal
                 </Button>
@@ -175,6 +189,7 @@ export default function AppointmentsCalendar() {
                   variant={view === "yearly" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setView("yearly")}
+                  className="text-xs sm:text-sm"
                 >
                   Anual
                 </Button>

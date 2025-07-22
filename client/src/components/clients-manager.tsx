@@ -102,7 +102,7 @@ export default function ClientsManager() {
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center space-x-4 p-4">
+                <div key={i} className="flex items-center space-x-4 p-4 border-b border-slate-100">
                   <Skeleton className="w-10 h-10 rounded-full" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-48" />
@@ -113,67 +113,111 @@ export default function ClientsManager() {
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayedClients && displayedClients.length > 0 ? (
-                    displayedClients.map((client: Client) => (
-                      <TableRow key={client.id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-medium text-primary">
-                                {getInitials(client.name)}
-                              </span>
+            <>
+              {/* Mobile Cards */}
+              <div className="sm:hidden space-y-4">
+                {displayedClients && displayedClients.length > 0 ? (
+                  displayedClients.map((client: Client) => (
+                    <div key={client.id} className="bg-white border border-slate-200 rounded-lg p-4 space-y-3 live-data">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">
+                              {getInitials(client.name)}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-slate-800">{client.name}</h3>
+                            <p className="text-sm text-slate-600">{formatPhone(client.phone)}</p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(client)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDelete(client.id)}
+                            disabled={deleteClientMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      {client.email && (
+                        <div className="text-sm text-slate-600">
+                          <strong>E-mail:</strong> {client.email}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-500">
+                    {searchQuery ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden sm:block responsive-table">
+                <Table className="desktop-table">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayedClients && displayedClients.length > 0 ? (
+                      displayedClients.map((client: Client) => (
+                        <TableRow key={client.id} className="live-data">
+                          <TableCell>
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary">
+                                  {getInitials(client.name)}
+                                </span>
+                              </div>
+                              <span className="font-medium text-slate-800">{client.name}</span>
                             </div>
-                            <span className="font-medium text-slate-800">{client.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-slate-600">
-                          {formatPhone(client.phone)}
-                        </TableCell>
-                        <TableCell className="text-slate-600">
-                          {client.email || "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(client)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(client.id)}
-                              disabled={deleteClientMutation.isPending}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          </TableCell>
+                          <TableCell className="text-slate-600">
+                            {formatPhone(client.phone)}
+                          </TableCell>
+                          <TableCell className="text-slate-600">
+                            {client.email || "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end space-x-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(client)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(client.id)}
+                                disabled={deleteClientMutation.isPending}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                          {searchQuery ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-slate-500">
-                        {searchQuery ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -57,3 +57,54 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Responsive grid patterns */
+  .responsive-grid {
+    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  .responsive-stats-grid {
+    @apply grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4;
+  }
+  
+  .responsive-table {
+    @apply overflow-x-auto;
+  }
+  
+  .mobile-card {
+    @apply block sm:hidden border rounded-lg p-4 space-y-3;
+  }
+  
+  .desktop-table {
+    @apply hidden sm:table;
+  }
+  
+  /* Mobile-first containers */
+  .container-responsive {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  /* Responsive text sizes */
+  .text-responsive-xl {
+    @apply text-lg sm:text-xl lg:text-2xl;
+  }
+  
+  .text-responsive-lg {
+    @apply text-base sm:text-lg lg:text-xl;
+  }
+  
+  /* Real-time update indicators */
+  .update-indicator {
+    @apply animate-pulse rounded-full;
+    background-color: hsl(var(--primary) / 0.2);
+  }
+  
+  .live-data {
+    @apply transition-colors duration-300;
+  }
+  
+  .data-updated {
+    @apply bg-green-50 border-green-200;
+  }
+}
