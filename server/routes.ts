@@ -396,10 +396,16 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/transactions", requireAuth, async (req: any, res) => {
     try {
+      console.log("Transaction request body:", JSON.stringify(req.body, null, 2));
       const validatedData = insertTransactionSchema.parse(req.body);
+      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
       const transaction = await storage.createTransaction(validatedData, req.user.id);
       res.status(201).json(transaction);
     } catch (error: any) {
+      console.log("Transaction creation error:", error);
+      if (error.issues) {
+        console.log("Validation issues:", JSON.stringify(error.issues, null, 2));
+      }
       res.status(400).json({ message: error.message || "Failed to create transaction" });
     }
   });
