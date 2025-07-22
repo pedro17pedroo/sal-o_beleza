@@ -17,11 +17,11 @@ export default function ClientsManager() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const { toast } = useToast();
 
-  const { data: clients, isLoading } = useQuery({
+  const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
-  const { data: searchResults } = useQuery({
+  const { data: searchResults } = useQuery<Client[]>({
     queryKey: ["/api/clients/search", { q: searchQuery }],
     enabled: searchQuery.length > 0,
   });
@@ -116,7 +116,7 @@ export default function ClientsManager() {
             <>
               {/* Mobile Cards */}
               <div className="sm:hidden space-y-4">
-                {displayedClients && displayedClients.length > 0 ? (
+                {displayedClients && Array.isArray(displayedClients) && displayedClients.length > 0 ? (
                   displayedClients.map((client: Client) => (
                     <div key={client.id} className="bg-white border border-slate-200 rounded-lg p-4 space-y-3 live-data">
                       <div className="flex items-center justify-between">
@@ -171,7 +171,7 @@ export default function ClientsManager() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {displayedClients && displayedClients.length > 0 ? (
+                    {displayedClients && Array.isArray(displayedClients) && displayedClients.length > 0 ? (
                       displayedClients.map((client: Client) => (
                         <TableRow key={client.id} className="live-data">
                           <TableCell>
