@@ -147,7 +147,8 @@ export default function AppointmentDetailsModal({
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete appointment');
-      return response.json();
+      // DELETE returns 204 with no content, so don't try to parse JSON
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
