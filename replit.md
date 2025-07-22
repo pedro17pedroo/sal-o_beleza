@@ -1,0 +1,75 @@
+# Beauty Salon Management System
+
+## Overview
+This is a full-stack web application for managing beauty salon operations, built with React, TypeScript, Express.js, and PostgreSQL. The system provides comprehensive functionality for appointment scheduling, client management, service catalog, and professional staff management.
+
+## User Preferences
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+The application follows a modern full-stack architecture with:
+- **Frontend**: React 18 with TypeScript, using Vite as the build tool
+- **Backend**: Express.js with TypeScript, providing RESTful APIs
+- **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
+- **Authentication**: Passport.js with local strategy and session-based auth
+- **UI Components**: Shadcn/ui component library with Tailwind CSS styling
+
+## Key Components
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript for type safety
+- **Routing**: Wouter for lightweight client-side routing
+- **State Management**: TanStack Query (React Query) for server state management
+- **Styling**: Tailwind CSS with custom design tokens
+- **UI Components**: Shadcn/ui component library providing consistent, accessible components
+- **Forms**: React Hook Form with Zod validation for type-safe form handling
+- **Build Tool**: Vite for fast development and optimized production builds
+
+### Backend Architecture
+- **Runtime**: Node.js with Express.js framework
+- **Language**: TypeScript for type safety across the stack
+- **Authentication**: Passport.js with local strategy for username/password auth
+- **Session Management**: Express-session with PostgreSQL session store
+- **API Design**: RESTful endpoints with consistent error handling
+- **Database Access**: Drizzle ORM providing type-safe database operations
+
+### Database Schema
+The PostgreSQL database uses the following main entities:
+- **Users**: System administrators/salon owners
+- **Clients**: Customer information (name, phone, email)
+- **Services**: Available salon services with duration and pricing
+- **Professionals**: Staff members who perform services
+- **Appointments**: Scheduled appointments linking clients, services, and professionals
+
+All entities are properly related with foreign keys and include audit fields (createdAt timestamps).
+
+### Authentication & Authorization
+- **Strategy**: Session-based authentication using Passport.js
+- **Password Security**: Scrypt hashing with random salts
+- **Session Storage**: PostgreSQL-backed session store for persistence
+- **Route Protection**: Middleware to ensure authenticated access to API endpoints
+- **User Context**: React context provider for managing authentication state
+
+## Data Flow
+1. **Client Requests**: Frontend makes API calls using TanStack Query
+2. **Authentication**: Passport middleware validates user sessions
+3. **Route Handling**: Express routes process requests with proper error handling
+4. **Database Operations**: Drizzle ORM handles type-safe database queries
+5. **Response Formatting**: Consistent JSON responses with proper HTTP status codes
+6. **Client Updates**: TanStack Query manages cache invalidation and UI updates
+
+## External Dependencies
+- **Database**: Neon PostgreSQL for serverless database hosting
+- **UI Components**: Radix UI primitives for accessibility
+- **Validation**: Zod for runtime type validation
+- **Date Handling**: date-fns for date manipulation
+- **Development Tools**: Various Vite plugins for enhanced development experience
+
+## Deployment Strategy
+- **Build Process**: Vite builds the frontend, esbuild bundles the backend
+- **Environment**: Configured for Replit hosting with proper environment variables
+- **Database**: Uses Neon serverless PostgreSQL with WebSocket support
+- **Static Assets**: Frontend built to dist/public, served by Express in production
+- **Process Management**: Single Node.js process serving both API and static files
+
+The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.
