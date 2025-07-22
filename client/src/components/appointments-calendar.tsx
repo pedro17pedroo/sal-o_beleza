@@ -16,7 +16,12 @@ export default function AppointmentsCalendar() {
   };
 
   const { data: appointments, isLoading } = useQuery({
-    queryKey: ["/api/appointments", { date: formatDate(currentDate) }],
+    queryKey: ["/api/appointments", formatDate(currentDate)],
+    queryFn: async () => {
+      const response = await fetch(`/api/appointments?date=${formatDate(currentDate)}`);
+      if (!response.ok) throw new Error('Failed to fetch appointments');
+      return response.json();
+    }
   });
 
   const formatTime = (dateString: string) => {
@@ -60,16 +65,18 @@ export default function AppointmentsCalendar() {
     setCurrentDate(new Date());
   };
 
-  // Filter appointments by time period
-  const morningAppointments = appointments?.filter((apt: any) => {
+  // Filter appointments by time period - ensure appointments is an array
+  const appointmentsList = Array.isArray(appointments) ? appointments : [];
+  
+  const morningAppointments = appointmentsList.filter((apt: any) => {
     const hour = new Date(apt.date).getHours();
     return hour >= 8 && hour < 12;
-  }) || [];
+  });
 
-  const afternoonAppointments = appointments?.filter((apt: any) => {
+  const afternoonAppointments = appointmentsList.filter((apt: any) => {
     const hour = new Date(apt.date).getHours();
     return hour >= 13 && hour < 18;
-  }) || [];
+  });
 
   return (
     <div className="space-y-6">
