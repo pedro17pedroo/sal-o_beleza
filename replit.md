@@ -84,5 +84,9 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **January 22, 2025**: Implemented complete 4-view calendar system (Daily, Weekly, Monthly, Annual) with smart navigation
 - **January 22, 2025**: Improved public booking workflow - customers no longer select professionals, managers assign them later
 - **January 22, 2025**: Public bookings now always create pending appointments without professional assignment
+- **January 22, 2025**: Removed public user registration - only login available for authenticated access
+- **January 22, 2025**: Created admin seed user (username: admin, password: admin123) for system access
+- **January 22, 2025**: Added professional system access management - admin can grant/revoke access to professionals
+- **January 22, 2025**: Updated database schema to support professional system users with proper role management
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.

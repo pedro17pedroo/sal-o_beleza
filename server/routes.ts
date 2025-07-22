@@ -170,6 +170,49 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Grant system access to professional
+  app.post("/api/professionals/:id/grant-access", requireAuth, async (req: any, res) => {
+    try {
+      // Only admin can grant system access
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Only admin can grant system access" });
+      }
+
+      const id = parseInt(req.params.id);
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      const newUser = await storage.grantSystemAccess(id, req.user.id, { username, password });
+      res.status(201).json(newUser);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to grant system access" });
+    }
+  });
+
+  // Revoke system access from professional
+  app.post("/api/professionals/:id/revoke-access", requireAuth, async (req: any, res) => {
+    try {
+      // Only admin can revoke system access
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Only admin can revoke system access" });
+      }
+
+      const id = parseInt(req.params.id);
+      const revoked = await storage.revokeSystemAccess(id, req.user.id);
+      
+      if (!revoked) {
+        return res.status(404).json({ message: "Professional not found or doesn't have system access" });
+      }
+
+      res.status(200).json({ message: "System access revoked successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to revoke system access" });
+    }
+  });
+
   // Appointment routes
   app.get("/api/appointments", requireAuth, async (req: any, res) => {
     try {

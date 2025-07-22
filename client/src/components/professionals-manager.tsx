@@ -1,18 +1,24 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, User } from "lucide-react";
+import { Plus, Edit, Trash2, User, Shield } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ProfessionalModal } from "@/components/modals/professional-modal";
+import { SystemAccessModal } from "@/components/modals/system-access-modal";
+import { useAuth } from "@/hooks/use-auth";
 import type { Professional } from "@shared/schema";
 
 export default function ProfessionalsManager() {
   const [professionalModalOpen, setProfessionalModalOpen] = useState(false);
+  const [systemAccessModalOpen, setSystemAccessModalOpen] = useState(false);
   const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
+  const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ["/api/professionals"],
@@ -59,9 +65,21 @@ export default function ProfessionalsManager() {
     setEditingProfessional(null);
   };
 
+  const handleManageSystemAccess = (professional: Professional) => {
+    setSelectedProfessional(professional);
+    setSystemAccessModalOpen(true);
+  };
+
+  const handleCloseSystemAccessModal = () => {
+    setSystemAccessModalOpen(false);
+    setSelectedProfessional(null);
+  };
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
+  const isAdmin = user?.role === "admin";
 
   return (
     <div className="space-y-6">
@@ -108,27 +126,47 @@ export default function ProfessionalsManager() {
                           </span>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-slate-800">{professional.name}</h3>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h3 className="font-semibold text-slate-800">{professional.name}</h3>
+                            {professional.canAccessSystem && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Sistema
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-slate-500">{professional.specialty}</p>
                           <p className="text-xs text-slate-400">{professional.phone}</p>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(professional)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(professional.id)}
-                          disabled={deleteProfessionalMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(professional)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleManageSystemAccess(professional)}
+                              title="Gerenciar acesso ao sistema"
+                            >
+                              <Shield className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(professional.id)}
+                            disabled={deleteProfessionalMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -157,6 +195,12 @@ export default function ProfessionalsManager() {
         onClose={handleCloseModal}
         professional={editingProfessional || undefined}
         mode={editingProfessional ? "edit" : "create"}
+      />
+
+      <SystemAccessModal
+        professional={selectedProfessional}
+        open={systemAccessModalOpen}
+        onClose={handleCloseSystemAccessModal}
       />
     </div>
   );

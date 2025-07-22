@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   email: text("email"),
+  role: text("role").notNull().default("admin"), // admin or professional
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -37,6 +38,8 @@ export const professionals = pgTable("professionals", {
   phone: varchar("phone", { length: 20 }).notNull(),
   email: text("email"),
   userId: integer("user_id").notNull().references(() => users.id),
+  canAccessSystem: boolean("can_access_system").default(false).notNull(),
+  systemUserId: integer("system_user_id").references(() => users.id), // Reference to user account if professional can access system
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -73,6 +76,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   professionals: many(professionals),
   appointments: many(appointments),
   transactions: many(transactions),
+  systemProfessionals: many(professionals, { relationName: "professionalSystemUser" }),
 }));
 
 export const clientsRelations = relations(clients, ({ one, many }) => ({
@@ -95,6 +99,11 @@ export const professionalsRelations = relations(professionals, ({ one, many }) =
   user: one(users, {
     fields: [professionals.userId],
     references: [users.id],
+  }),
+  systemUser: one(users, {
+    fields: [professionals.systemUserId],
+    references: [users.id],
+    relationName: "professionalSystemUser",
   }),
   appointments: many(appointments),
 }));
@@ -136,6 +145,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   name: true,
   email: true,
+  role: true,
 });
 
 export const insertClientSchema = createInsertSchema(clients).omit({

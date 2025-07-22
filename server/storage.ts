@@ -39,6 +39,8 @@ export interface IStorage {
   createProfessional(professional: InsertProfessional, userId: number): Promise<Professional>;
   updateProfessional(id: number, professional: Partial<InsertProfessional>, userId: number): Promise<Professional | undefined>;
   deleteProfessional(id: number, userId: number): Promise<boolean>;
+  grantSystemAccess(professionalId: number, userId: number, userCredentials: { username: string; password: string }): Promise<User | undefined>;
+  revokeSystemAccess(professionalId: number, userId: number): Promise<boolean>;
 
   // Appointment methods
   getAppointments(userId: number): Promise<any[]>;
@@ -234,6 +236,74 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(professionals)
       .where(and(eq(professionals.id, id), eq(professionals.userId, userId)));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async grantSystemAccess(professionalId: number, userId: number, userCredentials: { username: string; password: string }): Promise<User | undefined> {
+    // Check if professional exists and belongs to user
+    const professional = await this.getProfessional(professionalId, userId);
+    if (!professional) {
+      throw new Error("Professional not found");
+    }
+
+    // Check if username already exists
+    const existingUser = await this.getUserByUsername(userCredentials.username);
+    if (existingUser) {
+      throw new Error("Username already exists");
+    }
+
+    // Import hashing function
+    const { scrypt, randomBytes } = await import("crypto");
+    const { promisify } = await import("util");
+    const scryptAsync = promisify(scrypt);
+    
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(userCredentials.password, salt, 64)) as Buffer;
+    const hashedPassword = `${buf.toString("hex")}.${salt}`;
+
+    // Create user account for professional
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        username: userCredentials.username,
+        password: hashedPassword,
+        name: professional.name,
+        email: professional.email,
+        role: "professional"
+      })
+      .returning();
+
+    // Update professional to link to user account
+    await db
+      .update(professionals)
+      .set({ 
+        canAccessSystem: true, 
+        systemUserId: newUser.id 
+      })
+      .where(and(eq(professionals.id, professionalId), eq(professionals.userId, userId)));
+
+    return newUser;
+  }
+
+  async revokeSystemAccess(professionalId: number, userId: number): Promise<boolean> {
+    // Get professional with system user info
+    const professional = await this.getProfessional(professionalId, userId);
+    if (!professional || !professional.systemUserId) {
+      return false;
+    }
+
+    // Delete user account
+    await db.delete(users).where(eq(users.id, professional.systemUserId));
+
+    // Update professional to remove system access
+    const result = await db
+      .update(professionals)
+      .set({ 
+        canAccessSystem: false, 
+        systemUserId: null 
+      })
+      .where(and(eq(professionals.id, professionalId), eq(professionals.userId, userId)));
+
     return (result.rowCount || 0) > 0;
   }
 
