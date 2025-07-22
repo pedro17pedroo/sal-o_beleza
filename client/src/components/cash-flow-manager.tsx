@@ -52,10 +52,11 @@ export default function CashFlowManager() {
     queryFn: async () => {
       const startOfMonth = new Date(selectedMonth + "-01");
       const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0);
-      return await apiRequest({
-        url: `/api/financial/summary?startDate=${startOfMonth.toISOString()}&endDate=${endOfMonth.toISOString()}`,
-        method: "GET",
-      });
+      const response = await apiRequest(
+        "GET",
+        `/api/financial/summary?startDate=${startOfMonth.toISOString()}&endDate=${endOfMonth.toISOString()}`
+      );
+      return await response.json();
     },
   });
 
@@ -65,23 +66,27 @@ export default function CashFlowManager() {
     queryFn: async () => {
       const startOfMonth = new Date(selectedMonth + "-01");
       const endOfMonth = new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0);
-      return await apiRequest({
-        url: `/api/transactions?startDate=${startOfMonth.toISOString()}&endDate=${endOfMonth.toISOString()}`,
-        method: "GET",
-      });
+      const response = await apiRequest(
+        "GET",
+        `/api/transactions?startDate=${startOfMonth.toISOString()}&endDate=${endOfMonth.toISOString()}`
+      );
+      return await response.json();
     },
   });
 
   const createTransactionMutation = useMutation({
-    mutationFn: async (data: TransactionForm) => await apiRequest({
-      url: "/api/transactions",
-      method: "POST",
-      body: {
-        ...data,
-        amount: data.amount,
-        transactionDate: new Date(data.transactionDate).toISOString(),
-      },
-    }),
+    mutationFn: async (data: TransactionForm) => {
+      const response = await apiRequest(
+        "POST",
+        "/api/transactions",
+        {
+          ...data,
+          amount: parseFloat(data.amount),
+          transactionDate: new Date(data.transactionDate).toISOString(),
+        }
+      );
+      return await response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/financial/summary"] });
