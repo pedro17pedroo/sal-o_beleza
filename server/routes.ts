@@ -239,7 +239,9 @@ export function registerRoutes(app: Express): Server {
 
   app.post("/api/appointments", requireAuth, async (req: any, res) => {
     try {
+      console.log("Appointment request body:", JSON.stringify(req.body, null, 2));
       const validatedData = insertAppointmentSchema.parse(req.body);
+      console.log("Validated appointment data:", JSON.stringify(validatedData, null, 2));
       
       // Check for conflicts
       const service = await storage.getService(validatedData.serviceId, req.user.id);
@@ -265,6 +267,10 @@ export function registerRoutes(app: Express): Server {
       const appointment = await storage.createAppointment(validatedData, req.user.id);
       res.status(201).json(appointment);
     } catch (error: any) {
+      console.log("Appointment creation error:", error);
+      if (error.issues) {
+        console.log("Validation issues:", JSON.stringify(error.issues, null, 2));
+      }
       res.status(400).json({ message: error.message || "Failed to create appointment" });
     }
   });

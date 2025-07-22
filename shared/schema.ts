@@ -171,12 +171,23 @@ export const insertAppointmentSchema = createInsertSchema(appointments).omit({
   userId: true,
   createdAt: true,
   endDate: true,
+}).extend({
+  date: z.union([z.date(), z.string().datetime()]).transform((val) => 
+    typeof val === 'string' ? new Date(val) : val
+  ),
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).omit({
   id: true,
   userId: true,
   createdAt: true,
+}).extend({
+  transactionDate: z.union([z.date(), z.string().datetime()]).transform((val) => 
+    typeof val === 'string' ? new Date(val) : val
+  ),
+  amount: z.union([z.number(), z.string()]).transform((val) => 
+    typeof val === 'string' ? parseFloat(val) : val
+  ),
 });
 
 // Types
