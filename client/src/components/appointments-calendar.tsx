@@ -195,10 +195,6 @@ export default function AppointmentsCalendar() {
                 </Button>
               </div>
             </div>
-            <Button onClick={() => setAppointmentModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Agendamento
-            </Button>
           </div>
           
           <div className="flex items-center justify-between">
