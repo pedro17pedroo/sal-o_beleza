@@ -66,6 +66,9 @@ export interface IStorage {
     expensesByCategory: { category: string; amount: number }[];
   }>;
 
+  // Mark appointment as paid
+  markAppointmentAsPaid(id: number, userId: number): Promise<any | undefined>;
+
   // Public booking methods (no authentication required)
   getAllPublicServices(): Promise<Service[]>;
   createPublicBooking(booking: {
@@ -442,32 +445,7 @@ export class DatabaseStorage implements IStorage {
     return conflictingAppointments.length > 0;
   }
 
-  async markAppointmentAsPaid(appointmentId: number, userId: number): Promise<any | undefined> {
-    const appointment = await this.getAppointment(appointmentId, userId);
-    if (!appointment) return undefined;
 
-    // Update appointment payment status
-    const [updatedAppointment] = await db
-      .update(appointments)
-      .set({ paymentStatus: "paid" })
-      .where(and(eq(appointments.id, appointmentId), eq(appointments.userId, userId)))
-      .returning();
-
-    if (updatedAppointment) {
-      // Create revenue transaction
-      await this.createTransaction({
-        type: "revenue",
-        category: "service_payment",
-        amount: appointment.servicePrice,
-        description: `Pagamento do serviço: ${appointment.serviceName} - Cliente: ${appointment.clientName}`,
-        appointmentId: appointmentId,
-        transactionDate: new Date()
-      }, userId);
-
-      return await this.getAppointment(appointmentId, userId);
-    }
-    return undefined;
-  }
 
   // Transaction methods
   async getTransactions(userId: number): Promise<Transaction[]> {
@@ -677,6 +655,59 @@ export class DatabaseStorage implements IStorage {
       return appointmentWithDetails[0];
     } catch (error) {
       console.error("Error creating public booking:", error);
+      throw error;
+    }
+  }
+
+  async markAppointmentAsPaid(id: number, userId: number): Promise<any | undefined> {
+    try {
+      // Update appointment payment status
+      const [updatedAppointment] = await db
+        .update(appointments)
+        .set({ paymentStatus: 'paid' })
+        .where(and(eq(appointments.id, id), eq(appointments.userId, userId)))
+        .returning();
+
+      if (!updatedAppointment) {
+        return undefined;
+      }
+
+      // Get full appointment details
+      const [appointmentDetails] = await db
+        .select({
+          id: appointments.id,
+          date: appointments.date,
+          endDate: appointments.endDate,
+          notes: appointments.notes,
+          status: appointments.status,
+          paymentStatus: appointments.paymentStatus,
+          clientName: clients.name,
+          clientPhone: clients.phone,
+          serviceName: services.name,
+          servicePrice: services.price,
+          serviceDuration: services.duration,
+          professionalName: professionals.name,
+        })
+        .from(appointments)
+        .innerJoin(clients, eq(appointments.clientId, clients.id))
+        .innerJoin(services, eq(appointments.serviceId, services.id))
+        .leftJoin(professionals, eq(appointments.professionalId, professionals.id))
+        .where(eq(appointments.id, id));
+
+      // Create a revenue transaction
+      const servicePrice = parseFloat(appointmentDetails.servicePrice);
+      await db.insert(transactions).values({
+        amount: servicePrice.toString(),
+        type: 'revenue',
+        category: 'services',
+        description: `Pagamento - ${appointmentDetails.serviceName} - ${appointmentDetails.clientName}`,
+        transactionDate: new Date(),
+        userId,
+      });
+
+      return appointmentDetails;
+    } catch (error) {
+      console.error("Error marking appointment as paid:", error);
       throw error;
     }
   }

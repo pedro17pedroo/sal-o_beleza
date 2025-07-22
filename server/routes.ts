@@ -324,8 +324,8 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Appointment not found" });
       }
       res.json(appointment);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message || "Failed to mark appointment as paid" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark appointment as paid" });
     }
   });
 
@@ -441,6 +441,41 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Appointments availability check (public route)
+  app.get("/api/appointments/availability", async (req: any, res) => {
+    try {
+      const { date, professionalId, serviceId } = req.query;
+      
+      if (!date) {
+        return res.status(400).json({ message: "Date is required" });
+      }
+
+      const selectedDate = new Date(date as string);
+      const startHour = 9; // 9 AM
+      const endHour = 18; // 6 PM
+      const interval = 30; // 30 minutes
+
+      const allSlots = [];
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += interval) {
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          const slotDateTime = new Date(selectedDate);
+          slotDateTime.setHours(hour, minute, 0, 0);
+          
+          // TODO: Check for existing appointments and mark slots as unavailable
+          allSlots.push({
+            time: timeString,
+            available: true
+          });
+        }
+      }
+
+      res.json(allSlots);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check availability" });
     }
   });
 

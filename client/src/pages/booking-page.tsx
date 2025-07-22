@@ -74,23 +74,33 @@ export default function BookingPage() {
     }
   }, [selectedDate, form.watch("serviceId")]);
 
-  const generateTimeSlots = () => {
-    const slots: TimeSlot[] = [];
-    const startHour = 9; // 9 AM
-    const endHour = 18; // 6 PM
-    const interval = 30; // 30 minutes
+  const generateTimeSlots = async () => {
+    try {
+      const response = await fetch(`/api/appointments/availability?date=${selectedDate}`);
+      if (response.ok) {
+        const availableSlots = await response.json();
+        setTimeSlots(availableSlots);
+      } else {
+        // Fallback to basic slots if API fails
+        const slots: TimeSlot[] = [];
+        const startHour = 9; 
+        const endHour = 18; 
+        const interval = 30; 
 
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += interval) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push({
-          time: timeString,
-          available: true, // For now, all slots are available
-        });
+        for (let hour = startHour; hour < endHour; hour++) {
+          for (let minute = 0; minute < 60; minute += interval) {
+            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            slots.push({
+              time: timeString,
+              available: true,
+            });
+          }
+        }
+        setTimeSlots(slots);
       }
+    } catch (error) {
+      console.error('Error fetching availability:', error);
     }
-
-    setTimeSlots(slots);
   };
 
   const createBookingMutation = useMutation({

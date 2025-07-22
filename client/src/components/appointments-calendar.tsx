@@ -5,11 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import AppointmentModal from "@/components/modals/appointment-modal";
+import AppointmentDetailsModal from "@/components/modals/appointment-details-modal";
 
 export default function AppointmentsCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<"daily" | "weekly">("daily");
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [appointmentDetailsOpen, setAppointmentDetailsOpen] = useState(false);
 
   const formatDate = (date: Date) => {
     return date.toISOString().split('T')[0];
@@ -168,7 +171,14 @@ export default function AppointmentsCalendar() {
                 <div className="space-y-2">
                   {morningAppointments.length > 0 ? (
                     morningAppointments.map((appointment: any) => (
-                      <div key={appointment.id} className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                      <div 
+                        key={appointment.id} 
+                        className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedAppointment(appointment);
+                          setAppointmentDetailsOpen(true);
+                        }}
+                      >
                         <div className="text-center min-w-[60px]">
                           <p className="text-sm font-medium text-slate-800">{formatTime(appointment.date)}</p>
                           <p className="text-xs text-slate-600">{getDuration(appointment.serviceDuration)}</p>
@@ -209,7 +219,14 @@ export default function AppointmentsCalendar() {
                 <div className="space-y-2">
                   {afternoonAppointments.length > 0 ? (
                     afternoonAppointments.map((appointment: any) => (
-                      <div key={appointment.id} className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                      <div 
+                        key={appointment.id} 
+                        className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedAppointment(appointment);
+                          setAppointmentDetailsOpen(true);
+                        }}
+                      >
                         <div className="text-center min-w-[60px]">
                           <p className="text-sm font-medium text-slate-800">{formatTime(appointment.date)}</p>
                           <p className="text-xs text-slate-600">{getDuration(appointment.serviceDuration)}</p>
@@ -251,6 +268,12 @@ export default function AppointmentsCalendar() {
       <AppointmentModal 
         open={appointmentModalOpen} 
         onOpenChange={setAppointmentModalOpen} 
+      />
+      
+      <AppointmentDetailsModal
+        open={appointmentDetailsOpen}
+        onOpenChange={setAppointmentDetailsOpen}
+        appointment={selectedAppointment}
       />
     </div>
   );
