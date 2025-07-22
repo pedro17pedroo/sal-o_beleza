@@ -81,5 +81,8 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **January 22, 2025**: Fixed API routing and database schema for public appointments
 - **January 22, 2025**: Updated currency formatting throughout system from R$ to Kz (Angolan Kwanza)
 - **January 22, 2025**: Confirmed public booking system working correctly with database integration
+- **January 22, 2025**: Implemented complete 4-view calendar system (Daily, Weekly, Monthly, Annual) with smart navigation
+- **January 22, 2025**: Improved public booking workflow - customers no longer select professionals, managers assign them later
+- **January 22, 2025**: Public bookings now always create pending appointments without professional assignment
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.

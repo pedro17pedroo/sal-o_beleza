@@ -616,22 +616,18 @@ export class DatabaseStorage implements IStorage {
       const serviceDuration = serviceDetails[0].duration;
       const endDate = new Date(booking.appointmentDate.getTime() + serviceDuration * 60000);
 
-      // Get a default professional (first available) or create appointment without one
-      const availableProfessionals = await db.select()
-        .from(professionals)
-        .limit(1);
+      // Don't assign professional for public bookings - let manager assign later
+      const professionalId = null;
 
-      const professionalId = availableProfessionals.length > 0 ? availableProfessionals[0].id : null;
-
-      // Create appointment 
+      // Create appointment without professional - manager will assign later
       const newAppointment = await db.insert(appointments)
         .values({
           clientId,
           serviceId: booking.serviceId,
-          professionalId, // Will be null if no professionals exist
+          professionalId: null, // No professional assigned for public bookings
           date: booking.appointmentDate,
           endDate,
-          status: "pending",
+          status: "pending", // Always pending for public bookings
           userId: adminUserId,
         })
         .returning();
