@@ -14,10 +14,6 @@ export default function AppointmentsCalendar() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [appointmentDetailsOpen, setAppointmentDetailsOpen] = useState(false);
 
-  const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
-
   // Generate date range based on current view
   const getDateRange = () => {
     const start = new Date(currentDate);
@@ -25,12 +21,10 @@ export default function AppointmentsCalendar() {
     
     switch (view) {
       case "daily":
-        // Same day
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
       case "weekly":
-        // Start of week (Monday) to end of week (Sunday)
         const dayOfWeek = start.getDay();
         const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
         start.setDate(start.getDate() + mondayOffset);
@@ -39,14 +33,12 @@ export default function AppointmentsCalendar() {
         end.setHours(23, 59, 59, 999);
         break;
       case "monthly":
-        // First day of month to last day of month
         start.setDate(1);
         start.setHours(0, 0, 0, 0);
         end.setMonth(end.getMonth() + 1, 0);
         end.setHours(23, 59, 59, 999);
         break;
       case "yearly":
-        // First day of year to last day of year
         start.setMonth(0, 1);
         start.setHours(0, 0, 0, 0);
         end.setMonth(11, 31);
@@ -57,17 +49,27 @@ export default function AppointmentsCalendar() {
     return { start, end };
   };
 
-  const dateRange = getDateRange();
-
   // Fetch appointments with proper date filtering
   const { data: appointments, isLoading } = useQuery({
     queryKey: ["/api/appointments", view, currentDate.toDateString()],
     queryFn: async () => {
-      const { start, end } = dateRange;
+      const { start, end } = getDateRange();
       const response = await fetch(`/api/appointments?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
       if (!response.ok) throw new Error('Failed to fetch appointments');
       return response.json();
     },
+  });
+
+  const appointmentsList = Array.isArray(appointments) ? appointments : [];
+  
+  const morningAppointments = appointmentsList.filter((apt: any) => {
+    const hour = new Date(apt.date).getHours();
+    return hour >= 8 && hour < 12;
+  });
+
+  const afternoonAppointments = appointmentsList.filter((apt: any) => {
+    const hour = new Date(apt.date).getHours();
+    return hour >= 13 && hour < 18;
   });
 
   const formatTime = (dateString: string) => {
@@ -140,19 +142,6 @@ export default function AppointmentsCalendar() {
     setCurrentDate(new Date());
   };
 
-  // Filter appointments by time period - ensure appointments is an array
-  const appointmentsList = Array.isArray(appointments) ? appointments : [];
-  
-  const morningAppointments = appointmentsList.filter((apt: any) => {
-    const hour = new Date(apt.date).getHours();
-    return hour >= 8 && hour < 12;
-  });
-
-  const afternoonAppointments = appointmentsList.filter((apt: any) => {
-    const hour = new Date(apt.date).getHours();
-    return hour >= 13 && hour < 18;
-  });
-
   return (
     <div className="space-y-6">
       <Card>
@@ -224,108 +213,118 @@ export default function AppointmentsCalendar() {
             </div>
           ) : (
             <>
-              {/* Daily and Weekly View - show appointments by time */}
+              {/* Daily and Weekly View */}
               {(view === "daily" || view === "weekly") && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Morning Schedule */}
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-4">Manhã (08:00 - 12:00)</h4>
-                <div className="space-y-2">
-                  {morningAppointments.length > 0 ? (
-                    morningAppointments.map((appointment: any) => (
-                      <div 
-                        key={appointment.id} 
-                        className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setAppointmentDetailsOpen(true);
-                        }}
-                      >
-                        <div className="text-center min-w-[60px]">
-                          <p className="text-sm font-medium text-slate-800">{formatTime(appointment.date)}</p>
-                          <p className="text-xs text-slate-600">{getDuration(appointment.serviceDuration)}</p>
+                  <div>
+                    <h4 className="font-semibold text-slate-800 mb-4">Manhã (08:00 - 12:00)</h4>
+                    <div className="space-y-3">
+                      {morningAppointments.length > 0 ? (
+                        morningAppointments.map((appointment: any) => (
+                          <div
+                            key={appointment.id}
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setAppointmentDetailsOpen(true);
+                            }}
+                            className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+                          >
+                            <div className="text-center min-w-[60px]">
+                              <p className="text-sm font-medium text-slate-800">
+                                {formatTime(appointment.date)}
+                              </p>
+                              <p className="text-xs text-slate-600">
+                                {getDuration(appointment.serviceDuration)}
+                              </p>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-slate-800">{appointment.clientName}</p>
+                              <p className="text-sm text-slate-600">{appointment.serviceName}</p>
+                              <p className="text-xs text-slate-500">
+                                {appointment.professionalName || "Sem profissional"}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                appointment.status === 'confirmed' 
+                                  ? 'bg-green-100 text-green-700'
+                                  : appointment.status === 'pending'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {appointment.status === 'confirmed' ? 'Confirmado' : 
+                                 appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-lg">
+                          <div className="text-center">
+                            <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                            <p className="text-sm text-slate-600">Nenhum agendamento de manhã</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-800">{appointment.clientName}</p>
-                          <p className="text-sm text-slate-600">{appointment.serviceName}</p>
-                          <p className="text-xs text-slate-500">{appointment.professionalName}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            appointment.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-700'
-                              : appointment.status === 'pending'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {appointment.status === 'confirmed' ? 'Confirmado' : 
-                             appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-lg">
-                      <div className="text-center">
-                        <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                        <p className="text-sm text-slate-600">Nenhum agendamento pela manhã</p>
-                      </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Afternoon Schedule */}
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-4">Tarde (13:00 - 18:00)</h4>
-                <div className="space-y-2">
-                  {afternoonAppointments.length > 0 ? (
-                    afternoonAppointments.map((appointment: any) => (
-                      <div 
-                        key={appointment.id} 
-                        className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          setSelectedAppointment(appointment);
-                          setAppointmentDetailsOpen(true);
-                        }}
-                      >
-                        <div className="text-center min-w-[60px]">
-                          <p className="text-sm font-medium text-slate-800">{formatTime(appointment.date)}</p>
-                          <p className="text-xs text-slate-600">{getDuration(appointment.serviceDuration)}</p>
+                  </div>
+
+                  <div>
+                    <h4 className="font-semibold text-slate-800 mb-4">Tarde (13:00 - 18:00)</h4>
+                    <div className="space-y-3">
+                      {afternoonAppointments.length > 0 ? (
+                        afternoonAppointments.map((appointment: any) => (
+                          <div
+                            key={appointment.id}
+                            onClick={() => {
+                              setSelectedAppointment(appointment);
+                              setAppointmentDetailsOpen(true);
+                            }}
+                            className="flex items-center space-x-4 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+                          >
+                            <div className="text-center min-w-[60px]">
+                              <p className="text-sm font-medium text-slate-800">
+                                {formatTime(appointment.date)}
+                              </p>
+                              <p className="text-xs text-slate-600">
+                                {getDuration(appointment.serviceDuration)}
+                              </p>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-slate-800">{appointment.clientName}</p>
+                              <p className="text-sm text-slate-600">{appointment.serviceName}</p>
+                              <p className="text-xs text-slate-500">
+                                {appointment.professionalName || "Sem profissional"}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                appointment.status === 'confirmed' 
+                                  ? 'bg-green-100 text-green-700'
+                                  : appointment.status === 'pending'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}>
+                                {appointment.status === 'confirmed' ? 'Confirmado' : 
+                                 appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-lg">
+                          <div className="text-center">
+                            <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                            <p className="text-sm text-slate-600">Nenhum agendamento à tarde</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-800">{appointment.clientName}</p>
-                          <p className="text-sm text-slate-600">{appointment.serviceName}</p>
-                          <p className="text-xs text-slate-500">{appointment.professionalName}</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            appointment.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-700'
-                              : appointment.status === 'pending'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {appointment.status === 'confirmed' ? 'Confirmado' : 
-                             appointment.status === 'pending' ? 'Pendente' : 'Cancelado'}
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex items-center justify-center p-8 border-2 border-dashed border-slate-300 rounded-lg">
-                      <div className="text-center">
-                        <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                        <p className="text-sm text-slate-600">Nenhum agendamento à tarde</p>
-                      </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
                 </div>
               )}
               
-              {/* Monthly and Yearly View - show appointments as list */}
+              {/* Monthly and Yearly View */}
               {(view === "monthly" || view === "yearly") && (
                 <div className="space-y-4">
                   <h4 className="font-semibold text-slate-800">
@@ -390,11 +389,12 @@ export default function AppointmentsCalendar() {
         </CardContent>
       </Card>
 
-      <AppointmentModal 
-        open={appointmentModalOpen} 
-        onOpenChange={setAppointmentModalOpen} 
+      {/* Modals */}
+      <AppointmentModal
+        open={appointmentModalOpen}
+        onOpenChange={setAppointmentModalOpen}
       />
-      
+
       <AppointmentDetailsModal
         open={appointmentDetailsOpen}
         onOpenChange={setAppointmentDetailsOpen}
