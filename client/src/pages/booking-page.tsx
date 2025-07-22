@@ -156,11 +156,8 @@ export default function BookingPage() {
     createBookingMutation.mutate(data);
   };
 
-  const formatCurrency = (value: string) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(parseFloat(value));
+  const formatCurrencyLocal = (value: string) => {
+    return formatCurrency(parseFloat(value));
   };
 
   if (isSuccess) {
@@ -262,7 +259,7 @@ export default function BookingPage() {
                               ) : (
                                 services?.map((service: Service) => (
                                   <SelectItem key={service.id} value={service.id.toString()}>
-                                    {service.name} - {formatCurrency(service.price)} ({service.duration}min)
+                                    {service.name} - {formatCurrencyLocal(service.price)} ({service.duration}min)
                                   </SelectItem>
                                 ))
                               )}

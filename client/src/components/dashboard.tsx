@@ -25,7 +25,7 @@ export default function Dashboard() {
 
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('pt-BR', {
+    return new Date(dateString).toLocaleTimeString('pt-AO', {
       hour: '2-digit',
       minute: '2-digit'
     });
