@@ -89,13 +89,20 @@ export default function AppointmentDetailsModal({
       if (!response.ok) throw new Error('Failed to update status');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, status) => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
       toast({
         title: "Status atualizado",
         description: "O status do agendamento foi atualizado com sucesso.",
       });
+      
+      // Se o status foi alterado para 'cancelled' (rejeitado), fechar o modal automaticamente
+      if (status === 'cancelled') {
+        setTimeout(() => {
+          onOpenChange(false);
+        }, 1000); // Aguarda 1 segundo para mostrar o toast antes de fechar
+      }
     },
     onError: () => {
       toast({

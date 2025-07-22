@@ -96,5 +96,8 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **January 22, 2025**: Implemented automatic data refresh in appointment details modal after edits
 - **January 22, 2025**: Added smart button logic based on appointment status and payment status
 - **January 22, 2025**: Enhanced appointment details with payment status badges and conditional button visibility
+- **January 22, 2025**: Fixed appointment cancellation error - removed JSON parsing from empty DELETE responses
+- **January 22, 2025**: Implemented automatic modal closure when appointment is rejected/cancelled
+- **January 22, 2025**: Enhanced button visibility - Confirmar/Rejeitar buttons disappear after status change
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.
