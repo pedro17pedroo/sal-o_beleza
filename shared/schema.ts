@@ -44,7 +44,7 @@ export const appointments = pgTable("appointments", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
   serviceId: integer("service_id").notNull().references(() => services.id),
-  professionalId: integer("professional_id").notNull().references(() => professionals.id),
+  professionalId: integer("professional_id").references(() => professionals.id),
   userId: integer("user_id").notNull().references(() => users.id),
   date: timestamp("date").notNull(),
   endDate: timestamp("end_date").notNull(),

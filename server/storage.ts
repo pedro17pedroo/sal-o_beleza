@@ -66,6 +66,16 @@ export interface IStorage {
     expensesByCategory: { category: string; amount: number }[];
   }>;
 
+  // Public booking methods (no authentication required)
+  getAllPublicServices(): Promise<Service[]>;
+  createPublicBooking(booking: {
+    clientName: string;
+    clientPhone: string;
+    clientEmail?: string;
+    serviceId: number;
+    appointmentDate: Date;
+  }): Promise<any>;
+
   sessionStore: session.Store;
 }
 
@@ -553,6 +563,122 @@ export class DatabaseStorage implements IStorage {
       revenueByCategory,
       expensesByCategory
     };
+  }
+
+  // Public booking methods (no authentication required)
+  async getAllPublicServices(): Promise<Service[]> {
+    try {
+      const result = await db.select().from(services);
+      return result;
+    } catch (error) {
+      console.error("Error fetching public services:", error);
+      return [];
+    }
+  }
+
+  async createPublicBooking(booking: {
+    clientName: string;
+    clientPhone: string;
+    clientEmail?: string;
+    serviceId: number;
+    appointmentDate: Date;
+  }): Promise<any> {
+    try {
+      // First, get the first available user to associate the booking with
+      const adminUsers = await db.select().from(users).limit(1);
+      if (adminUsers.length === 0) {
+        throw new Error("No admin user found. Please set up an admin account first.");
+      }
+      const adminUserId = adminUsers[0].id;
+
+      // Check if client already exists by phone
+      let existingClients = await db.select()
+        .from(clients)
+        .where(and(
+          eq(clients.phone, booking.clientPhone),
+          eq(clients.userId, adminUserId)
+        ));
+
+      let clientId: number;
+
+      if (existingClients.length > 0) {
+        // Update existing client with new information if provided
+        const existingClient = existingClients[0];
+        const updatedClient = await db.update(clients)
+          .set({
+            name: booking.clientName,
+            email: booking.clientEmail || existingClient.email,
+          })
+          .where(eq(clients.id, existingClient.id))
+          .returning();
+        clientId = updatedClient[0].id;
+      } else {
+        // Create new client
+        const newClients = await db.insert(clients)
+          .values({
+            name: booking.clientName,
+            phone: booking.clientPhone,
+            email: booking.clientEmail || "",
+            userId: adminUserId,
+          })
+          .returning();
+        clientId = newClients[0].id;
+      }
+
+      // Get service duration to calculate end date
+      const serviceDetails = await db.select()
+        .from(services)
+        .where(eq(services.id, booking.serviceId))
+        .limit(1);
+
+      if (serviceDetails.length === 0) {
+        throw new Error("Service not found");
+      }
+
+      const serviceDuration = serviceDetails[0].duration;
+      const endDate = new Date(booking.appointmentDate.getTime() + serviceDuration * 60000);
+
+      // Get a default professional (first available) or create appointment without one
+      const availableProfessionals = await db.select()
+        .from(professionals)
+        .limit(1);
+
+      const professionalId = availableProfessionals.length > 0 ? availableProfessionals[0].id : null;
+
+      // Create appointment 
+      const newAppointment = await db.insert(appointments)
+        .values({
+          clientId,
+          serviceId: booking.serviceId,
+          professionalId, // Will be null if no professionals exist
+          date: booking.appointmentDate,
+          endDate,
+          status: "pending",
+          userId: adminUserId,
+        })
+        .returning();
+
+      // Get the appointment with client and service details
+      const appointmentWithDetails = await db.select({
+        id: appointments.id,
+        date: appointments.date,
+        status: appointments.status,
+        clientName: clients.name,
+        clientPhone: clients.phone,
+        serviceName: services.name,
+        servicePrice: services.price,
+        serviceDuration: services.duration,
+      })
+      .from(appointments)
+      .leftJoin(clients, eq(appointments.clientId, clients.id))
+      .leftJoin(services, eq(appointments.serviceId, services.id))
+      .where(eq(appointments.id, newAppointment[0].id));
+
+      return appointmentWithDetails[0];
+    } catch (error) {
+      console.error("Error creating public booking:", error);
+      throw error;
+    }
   }
 }
 

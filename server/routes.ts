@@ -208,12 +208,12 @@ export function registerRoutes(app: Express): Server {
       const endDate = new Date(startDate);
       endDate.setMinutes(endDate.getMinutes() + service.duration);
 
-      const hasConflict = await storage.checkAppointmentConflict(
+      const hasConflict = validatedData.professionalId ? await storage.checkAppointmentConflict(
         validatedData.professionalId,
         startDate,
         endDate,
         req.user.id
-      );
+      ) : false;
 
       if (hasConflict) {
         return res.status(409).json({ message: "Appointment conflict detected" });
@@ -441,6 +441,40 @@ export function registerRoutes(app: Express): Server {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Public routes for booking (no authentication required)
+  app.get("/api/public/services", async (req: any, res) => {
+    try {
+      // Get services from any salon for public viewing
+      const services = await storage.getAllPublicServices();
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch services" });
+    }
+  });
+
+  app.post("/api/public/booking", async (req: any, res) => {
+    try {
+      const { clientName, clientPhone, clientEmail, serviceId, appointmentDate } = req.body;
+
+      if (!clientName || !clientPhone || !serviceId || !appointmentDate) {
+        return res.status(400).json({ message: "Nome, telefone, serviço e data são obrigatórios" });
+      }
+
+      // Create the booking without authentication
+      const booking = await storage.createPublicBooking({
+        clientName,
+        clientPhone,
+        clientEmail,
+        serviceId: parseInt(serviceId),
+        appointmentDate: new Date(appointmentDate),
+      });
+
+      res.status(201).json(booking);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to create booking" });
     }
   });
 
