@@ -101,5 +101,9 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **January 22, 2025**: Enhanced button visibility - Confirmar/Rejeitar buttons disappear after status change
 - **January 22, 2025**: Added automatic modal closure when payment is marked as paid
 - **January 22, 2025**: Enhanced Cancelar button logic - disappears when appointment is paid
+- **January 23, 2025**: Fixed dashboard "Agenda de Hoje" section - corrected API query for today's appointments
+- **January 23, 2025**: Implemented payment duplication prevention with server-side validation
+- **January 23, 2025**: Added client-side error handling for already paid appointments
+- **January 23, 2025**: Enhanced financial integrity - prevents multiple transaction entries for single payment
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.

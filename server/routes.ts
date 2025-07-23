@@ -373,7 +373,10 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Appointment not found" });
       }
       res.json(appointment);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === 'Appointment is already marked as paid') {
+        return res.status(400).json({ message: "Appointment is already marked as paid" });
+      }
       res.status(500).json({ message: "Failed to mark appointment as paid" });
     }
   });

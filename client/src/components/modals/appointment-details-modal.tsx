@@ -195,10 +195,13 @@ export default function AppointmentDetailsModal({
         onOpenChange(false);
       }, 1000); // Aguarda 1 segundo para mostrar o toast antes de fechar
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error.message || "Falha ao registrar o pagamento.";
       toast({
         title: "Erro",
-        description: "Falha ao registrar o pagamento.",
+        description: errorMessage.includes("already marked as paid") 
+          ? "Este agendamento já foi marcado como pago."
+          : errorMessage,
         variant: "destructive",
       });
     }

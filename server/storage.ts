@@ -727,6 +727,20 @@ export class DatabaseStorage implements IStorage {
 
   async markAppointmentAsPaid(id: number, userId: number): Promise<any | undefined> {
     try {
+      // First check if appointment is already paid
+      const [existingAppointment] = await db
+        .select({ paymentStatus: appointments.paymentStatus })
+        .from(appointments)
+        .where(and(eq(appointments.id, id), eq(appointments.userId, userId)));
+
+      if (!existingAppointment) {
+        return undefined;
+      }
+
+      if (existingAppointment.paymentStatus === 'paid') {
+        throw new Error('Appointment is already marked as paid');
+      }
+
       // Update appointment payment status
       const [updatedAppointment] = await db
         .update(appointments)
