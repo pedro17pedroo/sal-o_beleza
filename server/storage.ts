@@ -1,8 +1,9 @@
 import { 
-  users, clients, services, professionals, appointments, transactions,
+  users, clients, services, professionals, appointments, transactions, professionalPermissions,
   type User, type InsertUser, type Client, type InsertClient,
   type Service, type InsertService, type Professional, type InsertProfessional,
-  type Appointment, type InsertAppointment, type Transaction, type InsertTransaction
+  type Appointment, type InsertAppointment, type Transaction, type InsertTransaction,
+  type ProfessionalPermission, type InsertProfessionalPermission, type PermissionType
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, or } from "drizzle-orm";
@@ -41,6 +42,13 @@ export interface IStorage {
   deleteProfessional(id: number, userId: number): Promise<boolean>;
   grantSystemAccess(professionalId: number, userId: number, userCredentials: { username: string; password: string }): Promise<User | undefined>;
   revokeSystemAccess(professionalId: number, userId: number): Promise<boolean>;
+
+  // Permission methods
+  getProfessionalPermissions(professionalId: number): Promise<ProfessionalPermission[]>;
+  grantPermission(professionalId: number, permission: PermissionType): Promise<ProfessionalPermission>;
+  revokePermission(professionalId: number, permission: PermissionType): Promise<boolean>;
+  updateProfessionalPermissions(professionalId: number, permissions: PermissionType[]): Promise<void>;
+  checkUserPermission(userId: number, permission: PermissionType): Promise<boolean>;
 
   // Appointment methods
   getAppointments(userId: number): Promise<any[]>;
@@ -794,6 +802,100 @@ export class DatabaseStorage implements IStorage {
       console.error("Error marking appointment as paid:", error);
       throw error;
     }
+  }
+
+  // Permission methods
+  async getProfessionalPermissions(professionalId: number): Promise<ProfessionalPermission[]> {
+    return await db
+      .select()
+      .from(professionalPermissions)
+      .where(eq(professionalPermissions.professionalId, professionalId));
+  }
+
+  async grantPermission(professionalId: number, permission: PermissionType): Promise<ProfessionalPermission> {
+    // Check if permission already exists
+    const existing = await db
+      .select()
+      .from(professionalPermissions)
+      .where(
+        and(
+          eq(professionalPermissions.professionalId, professionalId),
+          eq(professionalPermissions.permission, permission)
+        )
+      );
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [newPermission] = await db
+      .insert(professionalPermissions)
+      .values({
+        professionalId,
+        permission
+      })
+      .returning();
+
+    return newPermission;
+  }
+
+  async revokePermission(professionalId: number, permission: PermissionType): Promise<boolean> {
+    const result = await db
+      .delete(professionalPermissions)
+      .where(
+        and(
+          eq(professionalPermissions.professionalId, professionalId),
+          eq(professionalPermissions.permission, permission)
+        )
+      );
+    
+    return (result.rowCount || 0) > 0;
+  }
+
+  async updateProfessionalPermissions(professionalId: number, permissions: PermissionType[]): Promise<void> {
+    // Remove all existing permissions for this professional
+    await db
+      .delete(professionalPermissions)
+      .where(eq(professionalPermissions.professionalId, professionalId));
+
+    // Add new permissions
+    if (permissions.length > 0) {
+      await db
+        .insert(professionalPermissions)
+        .values(
+          permissions.map(permission => ({
+            professionalId,
+            permission
+          }))
+        );
+    }
+  }
+
+  async checkUserPermission(userId: number, permission: PermissionType): Promise<boolean> {
+    // Check if user is admin
+    const user = await this.getUser(userId);
+    if (user?.role === 'admin') {
+      return true;
+    }
+
+    // Check if user is a professional with specific permission
+    if (user?.role === 'professional') {
+      // Find the professional record linked to this user
+      const [professionalRecord] = await db
+        .select()
+        .from(professionals)
+        .where(eq(professionals.systemUserId, userId));
+
+      if (!professionalRecord) {
+        return false;
+      }
+
+      // Check if professional has the required permission
+      const userPermissions = await this.getProfessionalPermissions(professionalRecord.id);
+      return userPermissions.some(p => p.permission === permission);
+    }
+
+    return false;
   }
 }
 

@@ -8,13 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { ProfessionalModal } from "@/components/modals/professional-modal";
-import { SystemAccessModal } from "@/components/modals/system-access-modal";
+import { PermissionsModal } from "@/components/modals/permissions-modal";
 import { useAuth } from "@/hooks/use-auth";
 import type { Professional } from "@shared/schema";
 
 export default function ProfessionalsManager() {
   const [professionalModalOpen, setProfessionalModalOpen] = useState(false);
-  const [systemAccessModalOpen, setSystemAccessModalOpen] = useState(false);
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
   const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const { toast } = useToast();
@@ -65,13 +65,13 @@ export default function ProfessionalsManager() {
     setEditingProfessional(null);
   };
 
-  const handleManageSystemAccess = (professional: Professional) => {
+  const handleManagePermissions = (professional: Professional) => {
     setSelectedProfessional(professional);
-    setSystemAccessModalOpen(true);
+    setPermissionsModalOpen(true);
   };
 
-  const handleCloseSystemAccessModal = () => {
-    setSystemAccessModalOpen(false);
+  const handleClosePermissionsModal = () => {
+    setPermissionsModalOpen(false);
     setSelectedProfessional(null);
   };
 
@@ -152,8 +152,8 @@ export default function ProfessionalsManager() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleManageSystemAccess(professional)}
-                              title="Gerenciar acesso ao sistema"
+                              onClick={() => handleManagePermissions(professional)}
+                              title="Gerenciar acesso e permissões"
                             >
                               <Shield className="w-4 h-4" />
                             </Button>
@@ -197,10 +197,10 @@ export default function ProfessionalsManager() {
         mode={editingProfessional ? "edit" : "create"}
       />
 
-      <SystemAccessModal
+      <PermissionsModal
         professional={selectedProfessional}
-        open={systemAccessModalOpen}
-        onClose={handleCloseSystemAccessModal}
+        open={permissionsModalOpen}
+        onClose={handleClosePermissionsModal}
       />
     </div>
   );

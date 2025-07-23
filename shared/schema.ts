@@ -69,6 +69,14 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Professional permissions table
+export const professionalPermissions = pgTable("professional_permissions", {
+  id: serial("id").primaryKey(),
+  professionalId: integer("professional_id").notNull().references(() => professionals.id),
+  permission: text("permission").notNull(), // view_appointments, manage_appointments, view_clients, manage_clients, view_services, manage_services, view_financial, manage_financial
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),
@@ -106,6 +114,7 @@ export const professionalsRelations = relations(professionals, ({ one, many }) =
     relationName: "professionalSystemUser",
   }),
   appointments: many(appointments),
+  permissions: many(professionalPermissions),
 }));
 
 export const appointmentsRelations = relations(appointments, ({ one, many }) => ({
@@ -136,6 +145,13 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, {
     fields: [transactions.userId],
     references: [users.id],
+  }),
+}));
+
+export const professionalPermissionsRelations = relations(professionalPermissions, ({ one }) => ({
+  professional: one(professionals, {
+    fields: [professionalPermissions.professionalId],
+    references: [professionals.id],
   }),
 }));
 
@@ -190,6 +206,11 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
   ),
 });
 
+export const insertProfessionalPermissionSchema = createInsertSchema(professionalPermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -203,3 +224,19 @@ export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type ProfessionalPermission = typeof professionalPermissions.$inferSelect;
+export type InsertProfessionalPermission = z.infer<typeof insertProfessionalPermissionSchema>;
+
+// Permission types enum
+export const PERMISSIONS = {
+  VIEW_APPOINTMENTS: 'view_appointments',
+  MANAGE_APPOINTMENTS: 'manage_appointments',
+  VIEW_CLIENTS: 'view_clients', 
+  MANAGE_CLIENTS: 'manage_clients',
+  VIEW_SERVICES: 'view_services',
+  MANAGE_SERVICES: 'manage_services',
+  VIEW_FINANCIAL: 'view_financial',
+  MANAGE_FINANCIAL: 'manage_financial',
+} as const;
+
+export type PermissionType = typeof PERMISSIONS[keyof typeof PERMISSIONS];

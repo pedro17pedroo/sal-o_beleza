@@ -213,6 +213,55 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get professional permissions
+  app.get("/api/professionals/:id/permissions", requireAuth, async (req: any, res) => {
+    try {
+      // Only admin can view permissions
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Only admin can view permissions" });
+      }
+
+      const id = parseInt(req.params.id);
+      const permissions = await storage.getProfessionalPermissions(id);
+      res.json(permissions);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to fetch permissions" });
+    }
+  });
+
+  // Update professional permissions
+  app.put("/api/professionals/:id/permissions", requireAuth, async (req: any, res) => {
+    try {
+      // Only admin can update permissions
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Only admin can update permissions" });
+      }
+
+      const id = parseInt(req.params.id);
+      const { permissions } = req.body;
+      
+      if (!Array.isArray(permissions)) {
+        return res.status(400).json({ message: "Permissions must be an array" });
+      }
+
+      await storage.updateProfessionalPermissions(id, permissions);
+      res.json({ message: "Permissions updated successfully" });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to update permissions" });
+    }
+  });
+
+  // Check user permission (for middleware use)
+  app.get("/api/permissions/check/:permission", requireAuth, async (req: any, res) => {
+    try {
+      const permission = req.params.permission;
+      const hasPermission = await storage.checkUserPermission(req.user.id, permission);
+      res.json({ hasPermission });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to check permission" });
+    }
+  });
+
   // Appointment routes
   app.get("/api/appointments", requireAuth, async (req: any, res) => {
     try {
