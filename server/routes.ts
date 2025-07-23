@@ -237,6 +237,20 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get a specific appointment by ID
+  app.get("/api/appointments/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const appointment = await storage.getAppointment(id, req.user.id);
+      if (!appointment) {
+        return res.status(404).json({ message: "Appointment not found" });
+      }
+      res.json(appointment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch appointment" });
+    }
+  });
+
   app.post("/api/appointments", requireAuth, async (req: any, res) => {
     try {
       console.log("Appointment request body:", JSON.stringify(req.body, null, 2));
