@@ -204,42 +204,61 @@ export default function CashFlowManager() {
                       <FormItem>
                         <FormLabel>Categoria</FormLabel>
                         {!isCustomCategory ? (
-                          <Select 
-                            onValueChange={(value) => {
-                              if (value === "custom") {
-                                setIsCustomCategory(true);
-                                setCustomCategoryValue("");
-                                field.onChange("");
-                              } else {
-                                field.onChange(value);
-                              }
-                            }} 
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione a categoria" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {form.watch("type") === "revenue" ? (
-                                <>
-                                  <SelectItem value="service_payment">Pagamento de Serviço</SelectItem>
-                                  <SelectItem value="other">Outros</SelectItem>
-                                  <SelectItem value="custom">+ Adicionar nova categoria</SelectItem>
-                                </>
-                              ) : (
-                                <>
-                                  <SelectItem value="salary">Salário</SelectItem>
-                                  <SelectItem value="supplies">Materiais</SelectItem>
-                                  <SelectItem value="rent">Aluguel</SelectItem>
-                                  <SelectItem value="utilities">Contas Básicas</SelectItem>
-                                  <SelectItem value="other">Outros</SelectItem>
-                                  <SelectItem value="custom">+ Adicionar nova categoria</SelectItem>
-                                </>
-                              )}
-                            </SelectContent>
-                          </Select>
+                          <div className="space-y-2">
+                            <Select 
+                              onValueChange={(value) => {
+                                if (value === "custom") {
+                                  setIsCustomCategory(true);
+                                  setCustomCategoryValue("");
+                                  field.onChange("");
+                                } else {
+                                  field.onChange(value);
+                                }
+                              }} 
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione a categoria" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {form.watch("type") === "revenue" ? (
+                                  <>
+                                    <SelectItem value="service_payment">Pagamento de Serviço</SelectItem>
+                                    <SelectItem value="other">Outros</SelectItem>
+                                    <SelectItem value="custom">+ Adicionar nova categoria</SelectItem>
+                                  </>
+                                ) : (
+                                  <>
+                                    <SelectItem value="salary">Salário</SelectItem>
+                                    <SelectItem value="supplies">Materiais</SelectItem>
+                                    <SelectItem value="rent">Aluguel</SelectItem>
+                                    <SelectItem value="utilities">Contas Básicas</SelectItem>
+                                    <SelectItem value="other">Outros</SelectItem>
+                                    <SelectItem value="custom">+ Adicionar nova categoria</SelectItem>
+                                  </>
+                                )}
+                              </SelectContent>
+                            </Select>
+                            {field.value && !["service_payment", "salary", "supplies", "rent", "utilities", "other"].includes(field.value) && (
+                              <div className="text-sm text-slate-600 bg-slate-50 p-2 rounded border">
+                                Categoria personalizada: <span className="font-medium">{field.value}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-2 h-auto p-1 text-slate-500 hover:text-slate-700"
+                                  onClick={() => {
+                                    setIsCustomCategory(true);
+                                    setCustomCategoryValue(field.value);
+                                  }}
+                                >
+                                  Editar
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <div className="space-y-2">
                             <Input
@@ -270,8 +289,8 @@ export default function CashFlowManager() {
                                 disabled={!customCategoryValue.trim()}
                                 onClick={() => {
                                   if (customCategoryValue.trim()) {
+                                    field.onChange(customCategoryValue.trim());
                                     setIsCustomCategory(false);
-                                    // Keep the custom value in the field
                                   }
                                 }}
                               >
