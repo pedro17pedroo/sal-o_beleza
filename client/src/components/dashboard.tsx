@@ -19,7 +19,13 @@ export default function Dashboard() {
   });
 
   const { data: todayAppointments, isLoading: appointmentsLoading } = useQuery({
-    queryKey: ["/api/appointments", { date: new Date().toISOString().split('T')[0] }],
+    queryKey: ["/api/appointments/today"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await fetch(`/api/appointments?date=${today}`);
+      if (!response.ok) throw new Error('Failed to fetch today appointments');
+      return response.json();
+    },
   });
 
 
