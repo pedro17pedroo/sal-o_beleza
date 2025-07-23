@@ -33,6 +33,8 @@ export default function CashFlowManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterType, setFilterType] = useState<"all" | "revenue" | "expense">("all");
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryValue, setCustomCategoryValue] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -94,6 +96,8 @@ export default function CashFlowManager() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       setIsModalOpen(false);
       form.reset();
+      setIsCustomCategory(false);
+      setCustomCategoryValue("");
       toast({
         title: "Transação criada",
         description: "A transação foi registrada com sucesso.",
@@ -123,6 +127,7 @@ export default function CashFlowManager() {
       utilities: "Contas Básicas",
       other: "Outros",
     };
+    // Return the mapped label if it exists, otherwise return the category as-is (for custom categories)
     return categories[category] || category;
   };
 
@@ -150,7 +155,14 @@ export default function CashFlowManager() {
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="w-40"
           />
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <Dialog open={isModalOpen} onOpenChange={(open) => {
+            setIsModalOpen(open);
+            if (!open) {
+              setIsCustomCategory(false);
+              setCustomCategoryValue("");
+              form.reset();
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -191,29 +203,83 @@ export default function CashFlowManager() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Categoria</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a categoria" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {form.watch("type") === "revenue" ? (
-                              <>
-                                <SelectItem value="service_payment">Pagamento de Serviço</SelectItem>
-                                <SelectItem value="other">Outros</SelectItem>
-                              </>
-                            ) : (
-                              <>
-                                <SelectItem value="salary">Salário</SelectItem>
-                                <SelectItem value="supplies">Materiais</SelectItem>
-                                <SelectItem value="rent">Aluguel</SelectItem>
-                                <SelectItem value="utilities">Contas Básicas</SelectItem>
-                                <SelectItem value="other">Outros</SelectItem>
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
+                        {!isCustomCategory ? (
+                          <Select 
+                            onValueChange={(value) => {
+                              if (value === "custom") {
+                                setIsCustomCategory(true);
+                                setCustomCategoryValue("");
+                                field.onChange("");
+                              } else {
+                                field.onChange(value);
+                              }
+                            }} 
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a categoria" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {form.watch("type") === "revenue" ? (
+                                <>
+                                  <SelectItem value="service_payment">Pagamento de Serviço</SelectItem>
+                                  <SelectItem value="other">Outros</SelectItem>
+                                  <SelectItem value="custom">+ Adicionar nova categoria</SelectItem>
+                                </>
+                              ) : (
+                                <>
+                                  <SelectItem value="salary">Salário</SelectItem>
+                                  <SelectItem value="supplies">Materiais</SelectItem>
+                                  <SelectItem value="rent">Aluguel</SelectItem>
+                                  <SelectItem value="utilities">Contas Básicas</SelectItem>
+                                  <SelectItem value="other">Outros</SelectItem>
+                                  <SelectItem value="custom">+ Adicionar nova categoria</SelectItem>
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="Digite o nome da nova categoria"
+                              value={customCategoryValue}
+                              onChange={(e) => {
+                                setCustomCategoryValue(e.target.value);
+                                field.onChange(e.target.value);
+                              }}
+                              autoFocus
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setIsCustomCategory(false);
+                                  setCustomCategoryValue("");
+                                  field.onChange("");
+                                }}
+                              >
+                                Cancelar
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={!customCategoryValue.trim()}
+                                onClick={() => {
+                                  if (customCategoryValue.trim()) {
+                                    setIsCustomCategory(false);
+                                    // Keep the custom value in the field
+                                  }
+                                }}
+                              >
+                                Confirmar
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
