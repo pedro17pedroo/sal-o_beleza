@@ -109,5 +109,6 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **July 23, 2025**: Updated database configuration from Neon to standard PostgreSQL
 - **July 23, 2025**: Fixed database connection and schema migration issues
 - **July 23, 2025**: Executed database seed - admin user created (username: admin, password: admin123)
+- **July 23, 2025**: Fixed appointment details modal reactive updates - data now refreshes immediately after edits
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Calendar, Clock, User, Phone, Mail, CheckCircle, XCircle, Edit, Trash2, UserCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,7 +29,7 @@ export default function AppointmentDetailsModal({
   const queryClient = useQueryClient();
 
   // Fetch the latest appointment data to keep it updated
-  const { data: currentAppointment } = useQuery({
+  const { data: currentAppointment, refetch: refetchAppointment } = useQuery({
     queryKey: ["/api/appointments", appointment?.id],
     queryFn: async () => {
       if (!appointment?.id) return null;
@@ -38,10 +38,20 @@ export default function AppointmentDetailsModal({
       return response.json();
     },
     enabled: open && !!appointment?.id,
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Always consider data stale to ensure fresh updates
   });
 
   // Use current appointment data if available, fallback to prop
   const displayAppointment = currentAppointment || appointment;
+
+  // Update local states when appointment data changes
+  useEffect(() => {
+    if (displayAppointment) {
+      setSelectedProfessional(displayAppointment.professionalName || "none");
+      setNotes(displayAppointment.notes || "");
+    }
+  }, [displayAppointment]);
 
   // Get professionals for assignment
   const { data: professionals } = useQuery({
@@ -89,9 +99,14 @@ export default function AppointmentDetailsModal({
       if (!response.ok) throw new Error('Failed to update status');
       return response.json();
     },
-    onSuccess: (data, status) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
+    onSuccess: async (data, status) => {
+      // Invalidate and refetch queries to ensure UI updates immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
+      
+      // Force refetch of the current appointment data
+      await refetchAppointment();
+      
       toast({
         title: "Status atualizado",
         description: "O status do agendamento foi atualizado com sucesso.",
@@ -130,9 +145,14 @@ export default function AppointmentDetailsModal({
       if (!response.ok) throw new Error('Failed to update appointment');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
+    onSuccess: async () => {
+      // Invalidate and refetch queries to ensure UI updates immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
+      
+      // Force refetch of the current appointment data
+      await refetchAppointment();
+      
       toast({
         title: "Agendamento atualizado",
         description: "As alterações foram salvas com sucesso.",
@@ -182,9 +202,14 @@ export default function AppointmentDetailsModal({
       if (!response.ok) throw new Error('Failed to mark as paid');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
+    onSuccess: async () => {
+      // Invalidate and refetch queries to ensure UI updates immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id] });
+      
+      // Force refetch of the current appointment data
+      await refetchAppointment();
+      
       toast({
         title: "Pagamento registrado",
         description: "O pagamento foi marcado como pago.",
