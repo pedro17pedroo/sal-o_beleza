@@ -112,8 +112,8 @@ export default function AppointmentDetailsModal({
         description: "O status do agendamento foi atualizado com sucesso.",
       });
       
-      // Se o status foi alterado para 'cancelled' (rejeitado), fechar o modal automaticamente
-      if (status === 'cancelled') {
+      // Fechar o modal automaticamente após confirmar ou rejeitar
+      if (status === 'cancelled' || status === 'confirmed') {
         setTimeout(() => {
           onOpenChange(false);
         }, 1000); // Aguarda 1 segundo para mostrar o toast antes de fechar
