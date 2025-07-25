@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface ProfessionalModalProps {
   isOpen: boolean;
@@ -44,6 +46,11 @@ export function ProfessionalModal({ isOpen, onClose, professional, mode }: Profe
       specialty: "",
       phone: "",
       email: "",
+      workDays: "1,2,3,4,5", // Monday to Friday
+      workStartTime: "08:00",
+      workEndTime: "18:00",
+      lunchStartTime: "",
+      lunchEndTime: "",
     },
   });
 
@@ -54,6 +61,11 @@ export function ProfessionalModal({ isOpen, onClose, professional, mode }: Profe
         specialty: professional.specialty,
         phone: professional.phone,
         email: professional.email || "",
+        workDays: professional.workDays || "1,2,3,4,5",
+        workStartTime: professional.workStartTime || "08:00",
+        workEndTime: professional.workEndTime || "18:00",
+        lunchStartTime: professional.lunchStartTime || "",
+        lunchEndTime: professional.lunchEndTime || "",
       });
     } else if (mode === "create") {
       form.reset({
@@ -61,6 +73,11 @@ export function ProfessionalModal({ isOpen, onClose, professional, mode }: Profe
         specialty: "",
         phone: "",
         email: "",
+        workDays: "1,2,3,4,5",
+        workStartTime: "08:00",
+        workEndTime: "18:00",
+        lunchStartTime: "",
+        lunchEndTime: "",
       });
     }
   }, [professional, mode, form]);
@@ -133,7 +150,7 @@ export function ProfessionalModal({ isOpen, onClose, professional, mode }: Profe
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Cadastrar Novo Profissional" : "Editar Profissional"}
@@ -208,6 +225,148 @@ export function ProfessionalModal({ isOpen, onClose, professional, mode }: Profe
                 </FormItem>
               )}
             />
+
+            {/* Work Schedule Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">Horário de Trabalho</h4>
+              
+              {/* Work Days */}
+              <FormField
+                control={form.control}
+                name="workDays"
+                render={({ field }) => {
+                  const daysOfWeek = [
+                    { id: "1", label: "Segunda-feira" },
+                    { id: "2", label: "Terça-feira" },
+                    { id: "3", label: "Quarta-feira" },
+                    { id: "4", label: "Quinta-feira" },
+                    { id: "5", label: "Sexta-feira" },
+                    { id: "6", label: "Sábado" },
+                    { id: "0", label: "Domingo" },
+                  ];
+                  
+                  const selectedDays = field.value ? field.value.split(",") : [];
+                  
+                  const handleDayChange = (dayId: string, checked: boolean) => {
+                    let newDays = [...selectedDays];
+                    if (checked) {
+                      if (!newDays.includes(dayId)) {
+                        newDays.push(dayId);
+                      }
+                    } else {
+                      newDays = newDays.filter(d => d !== dayId);
+                    }
+                    field.onChange(newDays.join(","));
+                  };
+                  
+                  return (
+                    <FormItem>
+                      <FormLabel>Dias de Trabalho *</FormLabel>
+                      <FormControl>
+                        <div className="grid grid-cols-2 gap-2">
+                          {daysOfWeek.map((day) => (
+                            <div key={day.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`day-${day.id}`}
+                                checked={selectedDays.includes(day.id)}
+                                onCheckedChange={(checked) => handleDayChange(day.id, !!checked)}
+                              />
+                              <Label 
+                                htmlFor={`day-${day.id}`}
+                                className="text-sm font-normal cursor-pointer"
+                              >
+                                {day.label}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+
+              {/* Work Hours */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="workStartTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hora de Início *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="time" 
+                          {...field}
+                          value={field.value || "08:00"}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="workEndTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hora de Fim *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="time" 
+                          {...field}
+                          value={field.value || "18:00"}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Lunch Break */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="lunchStartTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Início do Almoço (opcional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="time" 
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="12:00"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lunchEndTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fim do Almoço (opcional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="time" 
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="13:00"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button 

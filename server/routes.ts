@@ -564,6 +564,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Professional availability routes
+  app.get("/api/availability/time-slots", requireAuth, async (req: any, res) => {
+    try {
+      const { date, serviceId } = req.query;
+      
+      if (!date || !serviceId) {
+        return res.status(400).json({ message: "Date and service ID are required" });
+      }
+
+      const service = await storage.getService(parseInt(serviceId), req.user.id);
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+
+      const timeSlots = await storage.getAvailableTimeSlots(
+        new Date(date as string),
+        service.duration,
+        req.user.id
+      );
+      
+      res.json(timeSlots);
+    } catch (error) {
+      console.error("Error fetching time slots:", error);
+      res.status(500).json({ message: "Failed to fetch available time slots" });
+    }
+  });
+
+  app.get("/api/availability/working-days", requireAuth, async (req: any, res) => {
+    try {
+      const workingDays = await storage.getWorkingDays(req.user.id);
+      res.json(workingDays);
+    } catch (error) {
+      console.error("Error fetching working days:", error);
+      res.status(500).json({ message: "Failed to fetch working days" });
+    }
+  });
+
   // Dashboard stats
   app.get("/api/dashboard/stats", requireAuth, async (req: any, res) => {
     try {

@@ -7,7 +7,7 @@ import {
   PERMISSIONS
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, or, sql, desc, ilike } from "drizzle-orm";
+import { eq, and, gte, lte, or, sql, desc, ilike, ne } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -1009,6 +1009,105 @@ export class DatabaseStorage implements IStorage {
     }
 
     return permissions;
+  }
+
+  // Professional availability methods
+  async getAvailableTimeSlots(
+    date: Date,
+    serviceDurationMinutes: number,
+    userId: number
+  ): Promise<{ time: string; availableProfessionals: number }[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const dayOfWeek = date.getDay().toString(); // 0=Sunday, 1=Monday, etc.
+    
+    // Get all professionals that work on this day
+    const availableProfessionals = await db
+      .select()
+      .from(professionals)
+      .where(
+        and(
+          eq(professionals.userId, ownerId),
+          sql`${professionals.workDays} LIKE '%${dayOfWeek}%'`
+        )
+      );
+
+    if (availableProfessionals.length === 0) {
+      return []; // No professionals work on this day
+    }
+
+    // Get existing appointments for this day
+    const existingAppointments = await this.getAppointmentsByDate(date, userId);
+
+    // For each professional, calculate their available slots
+    const allTimeSlots = new Map<string, number>();
+
+    for (const professional of availableProfessionals) {
+      const workStart = this.timeStringToMinutes(professional.workStartTime);
+      const workEnd = this.timeStringToMinutes(professional.workEndTime);
+      const lunchStart = professional.lunchStartTime ? this.timeStringToMinutes(professional.lunchStartTime) : null;
+      const lunchEnd = professional.lunchEndTime ? this.timeStringToMinutes(professional.lunchEndTime) : null;
+
+      // Generate 30-minute slots during work hours
+      for (let minutes = workStart; minutes + serviceDurationMinutes <= workEnd; minutes += 30) {
+        // Skip lunch break
+        if (lunchStart && lunchEnd && minutes >= lunchStart && minutes < lunchEnd) {
+          continue;
+        }
+
+        const timeString = this.minutesToTimeString(minutes);
+        const slotStart = new Date(date);
+        slotStart.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+        const slotEnd = new Date(slotStart);
+        slotEnd.setMinutes(slotEnd.getMinutes() + serviceDurationMinutes);
+
+        // Check if professional has conflict with existing appointments
+        const hasConflict = existingAppointments.some(apt => 
+          apt.professionalName === professional.name &&
+          ((new Date(apt.date) < slotEnd) && (new Date(apt.endDate) > slotStart))
+        );
+
+        if (!hasConflict) {
+          const currentCount = allTimeSlots.get(timeString) || 0;
+          allTimeSlots.set(timeString, currentCount + 1);
+        }
+      }
+    }
+
+    // Convert map to array and sort by time
+    const timeSlots: { time: string; availableProfessionals: number }[] = [];
+    allTimeSlots.forEach((count, time) => {
+      timeSlots.push({ time, availableProfessionals: count });
+    });
+
+    return timeSlots.sort((a, b) => a.time.localeCompare(b.time));
+  }
+
+  async getWorkingDays(userId: number): Promise<string[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const allProfessionals = await db
+      .select()
+      .from(professionals)
+      .where(eq(professionals.userId, ownerId));
+
+    const allWorkingDays = new Set<string>();
+    
+    for (const professional of allProfessionals) {
+      const days = professional.workDays.split(',');
+      days.forEach((day: string) => allWorkingDays.add(day));
+    }
+
+    return Array.from(allWorkingDays).sort();
+  }
+
+  private timeStringToMinutes(timeString: string): number {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private minutesToTimeString(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
   }
 }
 

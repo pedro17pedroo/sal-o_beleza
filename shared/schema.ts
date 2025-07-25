@@ -40,6 +40,12 @@ export const professionals = pgTable("professionals", {
   userId: integer("user_id").notNull().references(() => users.id),
   canAccessSystem: boolean("can_access_system").default(false).notNull(),
   systemUserId: integer("system_user_id").references(() => users.id), // Reference to user account if professional can access system
+  // Work schedule fields
+  workDays: text("work_days").notNull().default("1,2,3,4,5"), // Days of week: 0=Sunday, 1=Monday, etc. Comma-separated
+  workStartTime: text("work_start_time").notNull().default("08:00"), // Start time in HH:MM format
+  workEndTime: text("work_end_time").notNull().default("18:00"), // End time in HH:MM format
+  lunchStartTime: text("lunch_start_time"), // Optional lunch break start time
+  lunchEndTime: text("lunch_end_time"), // Optional lunch break end time
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -180,6 +186,12 @@ export const insertProfessionalSchema = createInsertSchema(professionals).omit({
   id: true,
   userId: true,
   createdAt: true,
+}).extend({
+  workDays: z.string().optional().default("1,2,3,4,5"), // Monday to Friday by default
+  workStartTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().default("08:00"),
+  workEndTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().default("18:00"),
+  lunchStartTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
+  lunchEndTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
 });
 
 export const insertAppointmentSchema = createInsertSchema(appointments).omit({
