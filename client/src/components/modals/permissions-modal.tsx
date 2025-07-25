@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +45,7 @@ const PERMISSION_ICONS = {
 export function PermissionsModal({ professional, open, onClose }: PermissionsModalProps) {
   const [credentials, setCredentials] = useState({ username: "", password: "" });
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("access");
   const { toast } = useToast();
 
   // Get current permissions for professional
@@ -60,11 +61,21 @@ export function PermissionsModal({ professional, open, onClose }: PermissionsMod
 
   useEffect(() => {
     if (currentPermissions.length > 0) {
-      setSelectedPermissions(currentPermissions.map((p: any) => p.permission));
-    } else {
+      const newPermissions = currentPermissions.map((p: any) => p.permission);
+      setSelectedPermissions(newPermissions);
+    } else if (currentPermissions.length === 0 && professional?.canAccessSystem) {
       setSelectedPermissions([]);
     }
-  }, [currentPermissions]);
+  }, [currentPermissions, professional?.canAccessSystem]);
+
+  // Set initial tab when modal opens
+  useEffect(() => {
+    if (professional?.canAccessSystem) {
+      setActiveTab("permissions");
+    } else {
+      setActiveTab("access");
+    }
+  }, [professional?.canAccessSystem, open]);
 
   const grantAccessMutation = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
@@ -72,11 +83,14 @@ export function PermissionsModal({ professional, open, onClose }: PermissionsMod
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/professionals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/professionals", professional?.id, "permissions"] });
       toast({
         title: "Acesso concedido",
         description: "O profissional agora pode acessar o sistema.",
       });
       setCredentials({ username: "", password: "" });
+      // Switch to permissions tab after successful access grant
+      setActiveTab("permissions");
     },
     onError: (error: any) => {
       toast({
@@ -172,6 +186,9 @@ export function PermissionsModal({ professional, open, onClose }: PermissionsMod
             <Shield className="w-5 h-5" />
             <span>Controle de Acesso e Permissões</span>
           </DialogTitle>
+          <DialogDescription>
+            Gerencie o acesso ao sistema e as permissões do profissional
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -188,7 +205,7 @@ export function PermissionsModal({ professional, open, onClose }: PermissionsMod
             )}
           </div>
 
-          <Tabs defaultValue="access" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="access">Acesso ao Sistema</TabsTrigger>
               <TabsTrigger value="permissions" disabled={!hasSystemAccess}>
