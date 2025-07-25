@@ -3,10 +3,11 @@ import {
   type User, type InsertUser, type Client, type InsertClient,
   type Service, type InsertService, type Professional, type InsertProfessional,
   type Appointment, type InsertAppointment, type Transaction, type InsertTransaction,
-  type ProfessionalPermission, type InsertProfessionalPermission, type PermissionType
+  type ProfessionalPermission, type InsertProfessionalPermission, type PermissionType,
+  PERMISSIONS
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, or } from "drizzle-orm";
+import { eq, and, gte, lte, or, sql, desc, ilike } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -49,6 +50,7 @@ export interface IStorage {
   revokePermission(professionalId: number, permission: PermissionType): Promise<boolean>;
   updateProfessionalPermissions(professionalId: number, permissions: PermissionType[]): Promise<void>;
   checkUserPermission(userId: number, permission: PermissionType): Promise<boolean>;
+  getUserPermissions(userId: number): Promise<Record<PermissionType, boolean>>;
 
   // Appointment methods
   getAppointments(userId: number): Promise<any[]>;
@@ -558,15 +560,24 @@ export class DatabaseStorage implements IStorage {
   async createTransaction(transaction: InsertTransaction, userId: number): Promise<Transaction> {
     const [newTransaction] = await db
       .insert(transactions)
-      .values({ ...transaction, userId })
+      .values({ 
+        ...transaction, 
+        userId,
+        amount: transaction.amount.toString()
+      })
       .returning();
     return newTransaction;
   }
 
   async updateTransaction(id: number, transaction: Partial<InsertTransaction>, userId: number): Promise<Transaction | undefined> {
+    const updateData = { ...transaction };
+    if (updateData.amount !== undefined) {
+      (updateData as any).amount = updateData.amount.toString();
+    }
+    
     const [updatedTransaction] = await db
       .update(transactions)
-      .set(transaction)
+      .set(updateData as any)
       .where(and(eq(transactions.id, id), eq(transactions.userId, userId)))
       .returning();
     return updatedTransaction || undefined;
@@ -896,6 +907,57 @@ export class DatabaseStorage implements IStorage {
     }
 
     return false;
+  }
+
+  async getUserPermissions(userId: number): Promise<Record<PermissionType, boolean>> {
+    const user = await this.getUser(userId);
+    
+    // Admin has all permissions
+    if (user?.role === 'admin') {
+      return {
+        [PERMISSIONS.VIEW_APPOINTMENTS]: true,
+        [PERMISSIONS.MANAGE_APPOINTMENTS]: true,
+        [PERMISSIONS.VIEW_CLIENTS]: true,
+        [PERMISSIONS.MANAGE_CLIENTS]: true,
+        [PERMISSIONS.VIEW_SERVICES]: true,
+        [PERMISSIONS.MANAGE_SERVICES]: true,
+        [PERMISSIONS.VIEW_FINANCIAL]: true,
+        [PERMISSIONS.MANAGE_FINANCIAL]: true,
+      };
+    }
+
+    // Initialize all permissions as false
+    const permissions: Record<PermissionType, boolean> = {
+      [PERMISSIONS.VIEW_APPOINTMENTS]: false,
+      [PERMISSIONS.MANAGE_APPOINTMENTS]: false,
+      [PERMISSIONS.VIEW_CLIENTS]: false,
+      [PERMISSIONS.MANAGE_CLIENTS]: false,
+      [PERMISSIONS.VIEW_SERVICES]: false,
+      [PERMISSIONS.MANAGE_SERVICES]: false,
+      [PERMISSIONS.VIEW_FINANCIAL]: false,
+      [PERMISSIONS.MANAGE_FINANCIAL]: false,
+    };
+
+    // If user is a professional, get their specific permissions
+    if (user?.role === 'professional') {
+      const [professionalRecord] = await db
+        .select()
+        .from(professionals)
+        .where(eq(professionals.systemUserId, userId));
+
+      if (professionalRecord) {
+        const userPermissions = await this.getProfessionalPermissions(professionalRecord.id);
+        
+        // Set permissions based on what the professional has
+        userPermissions.forEach(perm => {
+          if (perm.permission in permissions) {
+            permissions[perm.permission as PermissionType] = true;
+          }
+        });
+      }
+    }
+
+    return permissions;
   }
 }
 

@@ -1,5 +1,6 @@
 import { Building2, Calendar, Users, Clipboard, Home, LogOut, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,16 +14,17 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { key: "dashboard" as View, label: "Dashboard", icon: Home },
-  { key: "appointments" as View, label: "Agendamentos", icon: Calendar },
-  { key: "clients" as View, label: "Clientes", icon: Users },
-  { key: "services" as View, label: "Serviços", icon: Clipboard },
-  { key: "professionals" as View, label: "Profissionais", icon: Users },
-  { key: "cashflow" as View, label: "Controle de Caixa", icon: DollarSign },
+  { key: "dashboard" as View, label: "Dashboard", icon: Home, permission: null },
+  { key: "appointments" as View, label: "Agendamentos", icon: Calendar, permission: "appointments" },
+  { key: "clients" as View, label: "Clientes", icon: Users, permission: "clients" },
+  { key: "services" as View, label: "Serviços", icon: Clipboard, permission: "services" },
+  { key: "professionals" as View, label: "Profissionais", icon: Users, permission: "professionals" },
+  { key: "cashflow" as View, label: "Controle de Caixa", icon: DollarSign, permission: "financial" },
 ];
 
 export default function Sidebar({ currentView, onViewChange, isOpen, onToggle }: SidebarProps) {
   const { user, logoutMutation } = useAuth();
+  const { canView, isAdmin } = usePermissions();
 
   return (
     <>
@@ -46,34 +48,44 @@ export default function Sidebar({ currentView, onViewChange, isOpen, onToggle }:
             </div>
             <div>
               <h2 className="font-bold text-slate-800">{user?.name || "Salão Bella Vista"}</h2>
-              <p className="text-sm text-slate-600">Admin</p>
+              <p className="text-sm text-slate-600">{isAdmin ? "Admin" : "Profissional"}</p>
             </div>
           </div>
         </div>
         
         <nav className="p-4">
           <ul className="space-y-2">
-            {navigation.map(({ key, label, icon: Icon }) => (
-              <li key={key}>
-                <button
-                  onClick={() => {
-                    onViewChange(key);
-                    if (window.innerWidth < 1024) {
-                      onToggle();
-                    }
-                  }}
-                  className={cn(
-                    "flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors w-full text-left",
-                    currentView === key
-                      ? "bg-primary/10 text-primary"
-                      : "text-slate-700 hover:bg-slate-100"
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{label}</span>
-                </button>
-              </li>
-            ))}
+            {navigation
+              .filter(({ key, permission }) => {
+                // Dashboard is always visible
+                if (key === "dashboard") return true;
+                // Check permissions for other sections
+                if (permission) {
+                  return canView(permission as any);
+                }
+                return true;
+              })
+              .map(({ key, label, icon: Icon }) => (
+                <li key={key}>
+                  <button
+                    onClick={() => {
+                      onViewChange(key);
+                      if (window.innerWidth < 1024) {
+                        onToggle();
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors w-full text-left",
+                      currentView === key
+                        ? "bg-primary/10 text-primary"
+                        : "text-slate-700 hover:bg-slate-100"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{label}</span>
+                  </button>
+                </li>
+              ))}
           </ul>
         </nav>
         

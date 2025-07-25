@@ -118,5 +118,11 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **July 24, 2025**: Successfully migrated project from Replit Agent to standard Replit environment
 - **July 24, 2025**: Created PostgreSQL database and migrated from Neon configuration  
 - **July 24, 2025**: Executed database seed - admin user available (username: admin, password: admin123)
+- **July 25, 2025**: Implemented comprehensive role-based access control system with working permission enforcement
+- **July 25, 2025**: Created use-permissions hook for frontend permission checking with real-time validation
+- **July 25, 2025**: Added requirePermission middleware for backend route protection with proper error handling
+- **July 25, 2025**: Updated sidebar to dynamically show/hide sections based on user permissions
+- **July 25, 2025**: Successfully tested permission system - Telmo Rui restricted to only appointments/clients access
+- **July 25, 2025**: Verified 403 errors properly returned when users attempt unauthorized actions
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.

@@ -16,8 +16,32 @@ export function registerRoutes(app: Express): Server {
     next();
   };
 
+  // Middleware to check permissions
+  const requirePermission = (permission: import("@shared/schema").PermissionType) => {
+    return async (req: any, res: any, next: any) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Admin always has permission
+      if (req.user.role === "admin") {
+        return next();
+      }
+      
+      try {
+        const hasPermission = await storage.checkUserPermission(req.user.id, permission);
+        if (!hasPermission) {
+          return res.status(403).json({ message: "Insufficient permissions" });
+        }
+        next();
+      } catch (error) {
+        return res.status(500).json({ message: "Error checking permissions" });
+      }
+    };
+  };
+
   // Client routes
-  app.get("/api/clients", requireAuth, async (req: any, res) => {
+  app.get("/api/clients", requireAuth, requirePermission('view_clients' as any), async (req: any, res) => {
     try {
       const clients = await storage.getClients(req.user.id);
       res.json(clients);
@@ -39,7 +63,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/clients", requireAuth, async (req: any, res) => {
+  app.post("/api/clients", requireAuth, requirePermission('manage_clients' as any), async (req: any, res) => {
     try {
       const validatedData = insertClientSchema.parse(req.body);
       const client = await storage.createClient(validatedData, req.user.id);
@@ -49,7 +73,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/clients/:id", requireAuth, async (req: any, res) => {
+  app.put("/api/clients/:id", requireAuth, requirePermission('manage_clients' as any), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertClientSchema.partial().parse(req.body);
@@ -63,7 +87,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete("/api/clients/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/clients/:id", requireAuth, requirePermission('manage_clients' as any), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteClient(id, req.user.id);
@@ -77,7 +101,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Service routes
-  app.get("/api/services", requireAuth, async (req: any, res) => {
+  app.get("/api/services", requireAuth, requirePermission('view_services' as any), async (req: any, res) => {
     try {
       const services = await storage.getServices(req.user.id);
       res.json(services);
@@ -86,7 +110,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/services", requireAuth, async (req: any, res) => {
+  app.post("/api/services", requireAuth, requirePermission('manage_services' as any), async (req: any, res) => {
     try {
       const validatedData = insertServiceSchema.parse(req.body);
       const service = await storage.createService(validatedData, req.user.id);
@@ -96,7 +120,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/services/:id", requireAuth, async (req: any, res) => {
+  app.put("/api/services/:id", requireAuth, requirePermission('manage_services' as any), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertServiceSchema.partial().parse(req.body);
@@ -110,7 +134,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete("/api/services/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/services/:id", requireAuth, requirePermission('manage_services' as any), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteService(id, req.user.id);
@@ -251,6 +275,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Get user permissions
+  app.get("/api/user/permissions", requireAuth, async (req: any, res) => {
+    try {
+      const permissions = await storage.getUserPermissions(req.user.id);
+      res.json(permissions);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to get user permissions" });
+    }
+  });
+
   // Check user permission (for middleware use)
   app.get("/api/permissions/check/:permission", requireAuth, async (req: any, res) => {
     try {
@@ -263,7 +297,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Appointment routes
-  app.get("/api/appointments", requireAuth, async (req: any, res) => {
+  app.get("/api/appointments", requireAuth, requirePermission('view_appointments' as any), async (req: any, res) => {
     try {
       const { date, startDate, endDate } = req.query;
       
@@ -287,7 +321,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Get a specific appointment by ID
-  app.get("/api/appointments/:id", requireAuth, async (req: any, res) => {
+  app.get("/api/appointments/:id", requireAuth, requirePermission('view_appointments' as any), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const appointment = await storage.getAppointment(id, req.user.id);
@@ -300,7 +334,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/appointments", requireAuth, async (req: any, res) => {
+  app.post("/api/appointments", requireAuth, requirePermission('manage_appointments' as any), async (req: any, res) => {
     try {
       console.log("Appointment request body:", JSON.stringify(req.body, null, 2));
       const validatedData = insertAppointmentSchema.parse(req.body);
@@ -338,7 +372,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.put("/api/appointments/:id", requireAuth, async (req: any, res) => {
+  app.put("/api/appointments/:id", requireAuth, requirePermission('manage_appointments' as any), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertAppointmentSchema.partial().parse(req.body);
@@ -386,7 +420,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete("/api/appointments/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/appointments/:id", requireAuth, requirePermission('manage_appointments' as any), async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteAppointment(id, req.user.id);
@@ -445,7 +479,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Transaction routes
-  app.get("/api/transactions", requireAuth, async (req: any, res) => {
+  app.get("/api/transactions", requireAuth, requirePermission('view_financial' as any), async (req: any, res) => {
     try {
       const { startDate, endDate } = req.query;
       
@@ -466,7 +500,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post("/api/transactions", requireAuth, async (req: any, res) => {
+  app.post("/api/transactions", requireAuth, requirePermission('manage_financial' as any), async (req: any, res) => {
     try {
       console.log("Transaction request body:", JSON.stringify(req.body, null, 2));
       const validatedData = insertTransactionSchema.parse(req.body);
@@ -510,7 +544,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Financial reports
-  app.get("/api/financial/summary", requireAuth, async (req: any, res) => {
+  app.get("/api/financial/summary", requireAuth, requirePermission('view_financial' as any), async (req: any, res) => {
     try {
       const { startDate, endDate } = req.query;
       
