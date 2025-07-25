@@ -290,28 +290,30 @@ export function PermissionsModal({ professional, open, onClose }: PermissionsMod
                         Selecione as permissões que este profissional deve ter no sistema:
                       </p>
                       
-                      <div className="grid grid-cols-1 gap-3">
-                        {Object.entries(PERMISSIONS).map(([key, permission]) => {
-                          const Icon = PERMISSION_ICONS[permission];
-                          const isChecked = selectedPermissions.includes(permission);
-                          
-                          return (
-                            <div key={permission} className="flex items-center space-x-3 p-3 border rounded-lg">
-                              <Checkbox 
-                                id={permission}
-                                checked={isChecked}
-                                onCheckedChange={(checked) => handlePermissionToggle(permission, !!checked)}
-                              />
-                              <Icon className="w-4 h-4 text-muted-foreground" />
-                              <label 
-                                htmlFor={permission}
-                                className="text-sm font-medium cursor-pointer flex-1"
-                              >
-                                {PERMISSION_LABELS[permission]}
-                              </label>
-                            </div>
-                          );
-                        })}
+                      <div className="max-h-64 overflow-y-auto pr-2">
+                        <div className="grid grid-cols-1 gap-3">
+                          {Object.entries(PERMISSIONS).map(([key, permission]) => {
+                            const Icon = PERMISSION_ICONS[permission];
+                            const isChecked = selectedPermissions.includes(permission);
+                            
+                            return (
+                              <div key={permission} className="flex items-center space-x-3 p-3 border rounded-lg">
+                                <Checkbox 
+                                  id={permission}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => handlePermissionToggle(permission, !!checked)}
+                                />
+                                <Icon className="w-4 h-4 text-muted-foreground" />
+                                <label 
+                                  htmlFor={permission}
+                                  className="text-sm font-medium cursor-pointer flex-1"
+                                >
+                                  {PERMISSION_LABELS[permission]}
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       <div className="flex space-x-2 pt-4">
