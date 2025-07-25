@@ -104,6 +104,33 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // Helper method to get the effective owner ID for data access
+  private async getEffectiveOwnerId(userId: number): Promise<number> {
+    const user = await this.getUser(userId);
+    
+    // Admin users access their own data
+    if (user?.role === 'admin') {
+      return userId;
+    }
+    
+    // Professional users access the salon owner's data
+    if (user?.role === 'professional') {
+      // Find the professional record
+      const [professional] = await db
+        .select()
+        .from(professionals)
+        .where(eq(professionals.systemUserId, userId));
+      
+      if (professional) {
+        // Return the userId of the salon owner who created this professional
+        return professional.userId;
+      }
+    }
+    
+    // Fallback to the original userId
+    return userId;
+  }
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -125,48 +152,54 @@ export class DatabaseStorage implements IStorage {
 
   // Client methods
   async getClients(userId: number): Promise<Client[]> {
-    return await db.select().from(clients).where(eq(clients.userId, userId));
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    return await db.select().from(clients).where(eq(clients.userId, ownerId));
   }
 
   async getClient(id: number, userId: number): Promise<Client | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [client] = await db
       .select()
       .from(clients)
-      .where(and(eq(clients.id, id), eq(clients.userId, userId)));
+      .where(and(eq(clients.id, id), eq(clients.userId, ownerId)));
     return client || undefined;
   }
 
   async createClient(client: InsertClient, userId: number): Promise<Client> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [newClient] = await db
       .insert(clients)
-      .values({ ...client, userId })
+      .values({ ...client, userId: ownerId })
       .returning();
     return newClient;
   }
 
   async updateClient(id: number, client: Partial<InsertClient>, userId: number): Promise<Client | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [updatedClient] = await db
       .update(clients)
       .set(client)
-      .where(and(eq(clients.id, id), eq(clients.userId, userId)))
+      .where(and(eq(clients.id, id), eq(clients.userId, ownerId)))
       .returning();
     return updatedClient || undefined;
   }
 
   async deleteClient(id: number, userId: number): Promise<boolean> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const result = await db
       .delete(clients)
-      .where(and(eq(clients.id, id), eq(clients.userId, userId)));
+      .where(and(eq(clients.id, id), eq(clients.userId, ownerId)));
     return (result.rowCount || 0) > 0;
   }
 
   async searchClients(query: string, userId: number): Promise<Client[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     return await db
       .select()
       .from(clients)
       .where(
         and(
-          eq(clients.userId, userId),
+          eq(clients.userId, ownerId),
           or(
             eq(clients.name, query),
             eq(clients.phone, query)
@@ -177,51 +210,58 @@ export class DatabaseStorage implements IStorage {
 
   // Service methods
   async getServices(userId: number): Promise<Service[]> {
-    return await db.select().from(services).where(eq(services.userId, userId));
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    return await db.select().from(services).where(eq(services.userId, ownerId));
   }
 
   async getService(id: number, userId: number): Promise<Service | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [service] = await db
       .select()
       .from(services)
-      .where(and(eq(services.id, id), eq(services.userId, userId)));
+      .where(and(eq(services.id, id), eq(services.userId, ownerId)));
     return service || undefined;
   }
 
   async createService(service: InsertService, userId: number): Promise<Service> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [newService] = await db
       .insert(services)
-      .values({ ...service, userId })
+      .values({ ...service, userId: ownerId })
       .returning();
     return newService;
   }
 
   async updateService(id: number, service: Partial<InsertService>, userId: number): Promise<Service | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [updatedService] = await db
       .update(services)
       .set(service)
-      .where(and(eq(services.id, id), eq(services.userId, userId)))
+      .where(and(eq(services.id, id), eq(services.userId, ownerId)))
       .returning();
     return updatedService || undefined;
   }
 
   async deleteService(id: number, userId: number): Promise<boolean> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const result = await db
       .delete(services)
-      .where(and(eq(services.id, id), eq(services.userId, userId)));
+      .where(and(eq(services.id, id), eq(services.userId, ownerId)));
     return (result.rowCount || 0) > 0;
   }
 
   // Professional methods
   async getProfessionals(userId: number): Promise<Professional[]> {
-    return await db.select().from(professionals).where(eq(professionals.userId, userId));
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    return await db.select().from(professionals).where(eq(professionals.userId, ownerId));
   }
 
   async getProfessional(id: number, userId: number): Promise<Professional | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [professional] = await db
       .select()
       .from(professionals)
-      .where(and(eq(professionals.id, id), eq(professionals.userId, userId)));
+      .where(and(eq(professionals.id, id), eq(professionals.userId, ownerId)));
     return professional || undefined;
   }
 
@@ -319,6 +359,7 @@ export class DatabaseStorage implements IStorage {
 
   // Appointment methods
   async getAppointments(userId: number): Promise<any[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     return await db
       .select({
         id: appointments.id,
@@ -338,7 +379,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(clients, eq(appointments.clientId, clients.id))
       .innerJoin(services, eq(appointments.serviceId, services.id))
       .leftJoin(professionals, eq(appointments.professionalId, professionals.id))
-      .where(eq(appointments.userId, userId));
+      .where(eq(appointments.userId, ownerId));
   }
 
   async getAppointmentsByDate(date: Date, userId: number): Promise<any[]> {
