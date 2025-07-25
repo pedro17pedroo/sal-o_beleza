@@ -1025,15 +1025,16 @@ export class DatabaseStorage implements IStorage {
     const dayOfWeek = date.getDay().toString(); // 0=Sunday, 1=Monday, etc.
     
     // Get all professionals that work on this day
-    const availableProfessionals = await db
+    const allProfessionals = await db
       .select()
       .from(professionals)
-      .where(
-        and(
-          eq(professionals.userId, ownerId),
-          sql`${professionals.workDays} LIKE '%${dayOfWeek}%'`
-        )
-      );
+      .where(eq(professionals.userId, ownerId));
+    
+    // Filter professionals that work on this day
+    const availableProfessionals = allProfessionals.filter(professional => {
+      const workDays = professional.workDays.split(',');
+      return workDays.includes(dayOfWeek);
+    });
 
     if (availableProfessionals.length === 0) {
       return []; // No professionals work on this day

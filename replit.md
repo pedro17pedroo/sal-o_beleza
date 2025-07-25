@@ -124,5 +124,9 @@ All entities are properly related with foreign keys and include audit fields (cr
 - **July 25, 2025**: Updated sidebar to dynamically show/hide sections based on user permissions
 - **July 25, 2025**: Successfully tested permission system - Telmo Rui restricted to only appointments/clients access
 - **July 25, 2025**: Verified 403 errors properly returned when users attempt unauthorized actions
+- **July 25, 2025**: Successfully migrated project from Replit Agent to standard Replit environment
+- **July 25, 2025**: Fixed database SQL query issues in availability system for public booking
+- **July 25, 2025**: Enhanced booking page to show available time slots immediately when date is selected
+- **July 25, 2025**: Improved time slot display with better error messages and responsive grid layout
 
 The application is designed as an MVP (Minimum Viable Product) focusing on core salon management features while maintaining a clean architecture that allows for future enhancements like reporting, financial management, and advanced scheduling features.

@@ -318,6 +318,8 @@ export default function BookingPage() {
                           <Select onValueChange={(value) => {
                             field.onChange(value);
                             setSelectedDate(value);
+                            // Reset time selection when date changes
+                            form.setValue("time", "");
                           }} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -344,21 +346,29 @@ export default function BookingPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Selecione o Horário</FormLabel>
-                            <div className="grid grid-cols-4 gap-2">
-                              {timeSlots.map((slot) => (
-                                <Button
-                                  key={slot.time}
-                                  type="button"
-                                  variant={field.value === slot.time ? "default" : "outline"}
-                                  size="sm"
-                                  disabled={!slot.available}
-                                  onClick={() => field.onChange(slot.time)}
-                                  className="text-xs"
-                                >
-                                  {slot.time}
-                                </Button>
-                              ))}
-                            </div>
+                            {timeSlots.length === 0 ? (
+                              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
+                                <p className="text-orange-700 text-sm">
+                                  Nenhum horário disponível para esta data.
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                {timeSlots.map((slot) => (
+                                  <Button
+                                    key={slot.time}
+                                    type="button"
+                                    variant={field.value === slot.time ? "default" : "outline"}
+                                    size="sm"
+                                    disabled={!slot.available}
+                                    onClick={() => field.onChange(slot.time)}
+                                    className="text-sm font-medium"
+                                  >
+                                    {slot.time}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
                             <FormMessage />
                           </FormItem>
                         )}
