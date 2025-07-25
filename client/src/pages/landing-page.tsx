@@ -1,12 +1,15 @@
 import { Link } from "wouter";
-import { Calendar, Clock, Sparkles, Star, Users, MapPin, Phone, Mail, Images } from "lucide-react";
+import { Calendar, Clock, Sparkles, Star, Users, MapPin, Phone, Mail, Images, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import type { AboutInfo, Service, GalleryImage } from "@shared/schema";
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   // Fetch public data
   const { data: aboutInfo } = useQuery<AboutInfo>({
     queryKey: ["/api/public/about"],
@@ -26,34 +29,107 @@ export default function LandingPage() {
   // Get salon name from about info or use default
   const salonName = aboutInfo?.title || "Bella Studio";
 
+  // Smooth scroll function
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      setMobileMenuOpen(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="h-8 w-8 text-pink-600" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{salonName}</h1>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-8 w-8 text-pink-600" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{salonName}</h1>
+            </div>
+            
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex space-x-6">
+              <button 
+                onClick={() => scrollToSection('services')} 
+                className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors"
+              >
+                Serviços
+              </button>
+              <button 
+                onClick={() => scrollToSection('about')} 
+                className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors"
+              >
+                Sobre
+              </button>
+              <button 
+                onClick={() => scrollToSection('gallery')} 
+                className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors"
+              >
+                Galeria
+              </button>
+              <button 
+                onClick={() => scrollToSection('contact')} 
+                className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors"
+              >
+                Contato
+              </button>
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
-          <nav className="hidden md:flex space-x-6">
-            <a href="#services" className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400">
-              Serviços
-            </a>
-            <a href="#about" className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400">
-              Sobre
-            </a>
-            <a href="#gallery" className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400">
-              Galeria
-            </a>
-            <a href="#contact" className="text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400">
-              Contato
-            </a>
-          </nav>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <nav className="md:hidden mt-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col space-y-3 pt-4">
+                <button 
+                  onClick={() => scrollToSection('services')} 
+                  className="text-left text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors py-2"
+                >
+                  Serviços
+                </button>
+                <button 
+                  onClick={() => scrollToSection('about')} 
+                  className="text-left text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors py-2"
+                >
+                  Sobre
+                </button>
+                <button 
+                  onClick={() => scrollToSection('gallery')} 
+                  className="text-left text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors py-2"
+                >
+                  Galeria
+                </button>
+                <button 
+                  onClick={() => scrollToSection('contact')} 
+                  className="text-left text-gray-600 hover:text-pink-600 dark:text-gray-300 dark:hover:text-pink-400 transition-colors py-2"
+                >
+                  Contato
+                </button>
+                <div className="pt-2">
+                  <Link href="/booking">
+                    <Button className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white">
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Agendar Horário
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </nav>
+          )}
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
+      <section className="container mx-auto px-4 pt-24 pb-16 text-center">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
             Sua beleza,
@@ -71,12 +147,15 @@ export default function LandingPage() {
                 Agendar Horário
               </Button>
             </Link>
-            <a href="#services">
-              <Button variant="outline" size="lg" className="px-8 py-4 text-lg">
-                <Star className="mr-2 h-5 w-5" />
-                Ver Serviços
-              </Button>
-            </a>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="px-8 py-4 text-lg"
+              onClick={() => scrollToSection('services')}
+            >
+              <Star className="mr-2 h-5 w-5" />
+              Ver Serviços
+            </Button>
           </div>
         </div>
       </section>
