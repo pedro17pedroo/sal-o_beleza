@@ -31,6 +31,7 @@ export default function AppointmentsCalendar() {
         start.setHours(0, 0, 0, 0);
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
+        console.log('Weekly range:', { start: start.toISOString(), end: end.toISOString() });
         break;
       case "monthly":
         start.setDate(1);
@@ -54,9 +55,12 @@ export default function AppointmentsCalendar() {
     queryKey: ["/api/appointments", view, currentDate.toDateString()],
     queryFn: async () => {
       const { start, end } = getDateRange();
+      console.log(`Fetching appointments for ${view} from ${start.toISOString()} to ${end.toISOString()}`);
       const response = await fetch(`/api/appointments?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
       if (!response.ok) throw new Error('Failed to fetch appointments');
-      return response.json();
+      const data = await response.json();
+      console.log(`Received ${Array.isArray(data) ? data.length : 0} appointments:`, data);
+      return data;
     },
   });
 
@@ -69,7 +73,7 @@ export default function AppointmentsCalendar() {
 
   const afternoonAppointments = appointmentsList.filter((apt: any) => {
     const hour = new Date(apt.date).getHours();
-    return hour >= 13 && hour < 18;
+    return hour >= 13 && hour < 24; // Include all afternoon and evening appointments
   });
 
   const formatTime = (dateString: string) => {
@@ -284,7 +288,7 @@ export default function AppointmentsCalendar() {
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-slate-800 mb-4">Tarde (13:00 - 18:00)</h4>
+                    <h4 className="font-semibold text-slate-800 mb-4">Tarde (13:00 - 23:00)</h4>
                     <div className="space-y-3">
                       {afternoonAppointments.length > 0 ? (
                         afternoonAppointments.map((appointment: any) => (
