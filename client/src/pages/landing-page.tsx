@@ -4,20 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import type { AboutInfo, Service, GalleryImage } from "@shared/schema";
 
 export default function LandingPage() {
   // Fetch public data
-  const { data: aboutInfo } = useQuery({
+  const { data: aboutInfo } = useQuery<AboutInfo>({
     queryKey: ["/api/public/about"],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const { data: services = [] } = useQuery({
+  const { data: services = [] } = useQuery<Service[]>({
     queryKey: ["/api/public/services"],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const { data: galleryImages = [] } = useQuery({
+  const { data: galleryImages = [] } = useQuery<GalleryImage[]>({
     queryKey: ["/api/public/gallery"],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -87,19 +88,19 @@ export default function LandingPage() {
             Nossos Serviços
           </h3>
           <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            {aboutInfo?.services || "Oferecemos uma experiência completa de beleza com profissionais qualificados e ambiente acolhedor."}
+            Oferecemos uma experiência completa de beleza com profissionais qualificados e ambiente acolhedor.
           </p>
         </div>
         
         {services.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.slice(0, 6).map((service: any) => (
+            {services.slice(0, 6).map((service) => (
               <Card key={service.id} className="text-center p-6 hover:shadow-lg transition-shadow">
                 <CardContent className="pt-6">
                   <Sparkles className="h-12 w-12 text-pink-600 mx-auto mb-4" />
                   <h4 className="text-xl font-semibold mb-2">{service.name}</h4>
                   <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    {service.description || "Serviço profissional de qualidade"}
+                    Serviço profissional de qualidade
                   </p>
                   <div className="flex justify-center items-center space-x-4 text-sm">
                     <Badge variant="outline" className="flex items-center">
@@ -107,7 +108,7 @@ export default function LandingPage() {
                       {service.duration}min
                     </Badge>
                     <Badge className="bg-pink-600 text-white">
-                      {service.price.toLocaleString('pt-BR', { 
+                      {Number(service.price).toLocaleString('pt-BR', { 
                         style: 'currency', 
                         currency: 'AOA',
                         minimumFractionDigits: 0,
@@ -238,7 +239,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {galleryImages.slice(0, 8).map((image: any) => (
+            {galleryImages.slice(0, 8).map((image) => (
               <Card key={image.id} className="overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300">
                 <div className="aspect-square relative">
                   <img
