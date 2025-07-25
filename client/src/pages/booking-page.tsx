@@ -67,7 +67,17 @@ export default function BookingPage() {
     },
   });
 
-  // Generate time slots based on selected service
+  // Get working days for date filtering
+  const { data: workingDays } = useQuery({
+    queryKey: ["/api/public/availability/working-days"],
+    queryFn: async () => {
+      const response = await fetch("/api/public/availability/working-days");
+      if (!response.ok) return [];
+      return await response.json();
+    },
+  });
+
+  // Generate time slots based on professional availability
   useEffect(() => {
     if (selectedDate && form.watch("serviceId")) {
       generateTimeSlots();
@@ -76,30 +86,25 @@ export default function BookingPage() {
 
   const generateTimeSlots = async () => {
     try {
-      const response = await fetch(`/api/appointments/availability?date=${selectedDate}`);
+      const serviceId = form.watch("serviceId");
+      if (!serviceId) return;
+
+      const response = await fetch(`/api/public/availability/time-slots?date=${selectedDate}&serviceId=${serviceId}`);
       if (response.ok) {
         const availableSlots = await response.json();
-        setTimeSlots(availableSlots);
-      } else {
-        // Fallback to basic slots if API fails
-        const slots: TimeSlot[] = [];
-        const startHour = 9; 
-        const endHour = 18; 
-        const interval = 30; 
-
-        for (let hour = startHour; hour < endHour; hour++) {
-          for (let minute = 0; minute < 60; minute += interval) {
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-            slots.push({
-              time: timeString,
-              available: true,
-            });
-          }
-        }
+        // Convert to the expected format
+        const slots: TimeSlot[] = availableSlots.map((slot: any) => ({
+          time: slot.time,
+          available: slot.availableProfessionals > 0
+        }));
         setTimeSlots(slots);
+      } else {
+        // No availability found - no professionals working
+        setTimeSlots([]);
       }
     } catch (error) {
-      console.error('Error fetching availability:', error);
+      console.error("Failed to generate time slots:", error);
+      setTimeSlots([]);
     }
   };
 
@@ -146,10 +151,10 @@ export default function BookingPage() {
     
     for (let i = 1; i <= 14; i++) { // Next 14 days
       const date = addDays(today, i);
-      const dayOfWeek = date.getDay();
+      const dayOfWeek = date.getDay().toString();
       
-      // Skip Sundays (0)
-      if (dayOfWeek !== 0) {
+      // Only show dates when professionals are working
+      if (workingDays && workingDays.includes(dayOfWeek)) {
         dates.push({
           value: format(date, "yyyy-MM-dd"),
           label: format(date, "EEEE, dd 'de' MMMM", { locale: ptBR }),

@@ -564,8 +564,8 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  // Professional availability routes
-  app.get("/api/availability/time-slots", requireAuth, async (req: any, res) => {
+  // Professional availability routes (public - no auth required)
+  app.get("/api/public/availability/time-slots", async (req: any, res) => {
     try {
       const { date, serviceId } = req.query;
       
@@ -573,7 +573,15 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Date and service ID are required" });
       }
 
-      const service = await storage.getService(parseInt(serviceId), req.user.id);
+      // Get the first admin user to use for availability check
+      const adminUsers = await storage.getAllUsers();
+      const adminUser = adminUsers.find((u: any) => u.role === 'admin');
+      if (!adminUser) {
+        return res.status(500).json({ message: "No admin user found" });
+      }
+
+      const services = await storage.getAllPublicServices();
+      const service = services.find(s => s.id === parseInt(serviceId));
       if (!service) {
         return res.status(404).json({ message: "Service not found" });
       }
@@ -581,7 +589,7 @@ export function registerRoutes(app: Express): Server {
       const timeSlots = await storage.getAvailableTimeSlots(
         new Date(date as string),
         service.duration,
-        req.user.id
+        adminUser.id
       );
       
       res.json(timeSlots);
@@ -591,9 +599,16 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.get("/api/availability/working-days", requireAuth, async (req: any, res) => {
+  app.get("/api/public/availability/working-days", async (req: any, res) => {
     try {
-      const workingDays = await storage.getWorkingDays(req.user.id);
+      // Get the first admin user to use for working days check
+      const adminUsers = await storage.getAllUsers();
+      const adminUser = adminUsers.find((u: any) => u.role === 'admin');
+      if (!adminUser) {
+        return res.status(500).json({ message: "No admin user found" });
+      }
+
+      const workingDays = await storage.getWorkingDays(adminUser.id);
       res.json(workingDays);
     } catch (error) {
       console.error("Error fetching working days:", error);
