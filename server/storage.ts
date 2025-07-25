@@ -383,6 +383,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAppointmentsByDate(date: Date, userId: number): Promise<any[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -409,7 +410,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(professionals, eq(appointments.professionalId, professionals.id))
       .where(
         and(
-          eq(appointments.userId, userId),
+          eq(appointments.userId, ownerId),
           gte(appointments.date, startOfDay),
           lte(appointments.date, endOfDay)
         )
@@ -417,6 +418,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAppointmentsByDateRange(startDate: Date, endDate: Date, userId: number): Promise<any[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     return await db
       .select({
         id: appointments.id,
@@ -438,7 +440,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(professionals, eq(appointments.professionalId, professionals.id))
       .where(
         and(
-          eq(appointments.userId, userId),
+          eq(appointments.userId, ownerId),
           gte(appointments.date, startDate),
           lte(appointments.date, endDate)
         )
@@ -446,6 +448,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAppointment(id: number, userId: number): Promise<any | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [appointment] = await db
       .select({
         id: appointments.id,
@@ -468,12 +471,13 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(clients, eq(appointments.clientId, clients.id))
       .innerJoin(services, eq(appointments.serviceId, services.id))
       .leftJoin(professionals, eq(appointments.professionalId, professionals.id))
-      .where(and(eq(appointments.id, id), eq(appointments.userId, userId)));
+      .where(and(eq(appointments.id, id), eq(appointments.userId, ownerId)));
     
     return appointment || undefined;
   }
 
   async createAppointment(appointment: InsertAppointment, userId: number): Promise<any> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     // Calculate end date based on service duration
     const service = await this.getService(appointment.serviceId, userId);
     if (!service) {
@@ -487,7 +491,7 @@ export class DatabaseStorage implements IStorage {
       .insert(appointments)
       .values({ 
         ...appointment, 
-        userId, 
+        userId: ownerId, 
         endDate 
       })
       .returning();
@@ -496,6 +500,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAppointment(id: number, appointment: Partial<InsertAppointment>, userId: number): Promise<any | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     let updateData = { ...appointment };
 
     // Recalculate end date if date or service changed
@@ -516,7 +521,7 @@ export class DatabaseStorage implements IStorage {
     const [updatedAppointment] = await db
       .update(appointments)
       .set(updateData)
-      .where(and(eq(appointments.id, id), eq(appointments.userId, userId)))
+      .where(and(eq(appointments.id, id), eq(appointments.userId, ownerId)))
       .returning();
 
     if (updatedAppointment) {
@@ -526,9 +531,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAppointment(id: number, userId: number): Promise<boolean> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const result = await db
       .delete(appointments)
-      .where(and(eq(appointments.id, id), eq(appointments.userId, userId)));
+      .where(and(eq(appointments.id, id), eq(appointments.userId, ownerId)));
     return (result.rowCount || 0) > 0;
   }
 
@@ -539,8 +545,9 @@ export class DatabaseStorage implements IStorage {
     userId: number,
     excludeId?: number
   ): Promise<boolean> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     let whereClause = and(
-      eq(appointments.userId, userId),
+      eq(appointments.userId, ownerId),
       eq(appointments.professionalId, professionalId),
       or(
         and(
@@ -559,7 +566,7 @@ export class DatabaseStorage implements IStorage {
     );
 
     if (excludeId) {
-      whereClause = and(whereClause, eq(appointments.id, excludeId));
+      whereClause = and(whereClause, ne(appointments.id, excludeId));
     }
 
     const conflictingAppointments = await db
@@ -574,16 +581,18 @@ export class DatabaseStorage implements IStorage {
 
   // Transaction methods
   async getTransactions(userId: number): Promise<Transaction[]> {
-    return await db.select().from(transactions).where(eq(transactions.userId, userId));
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    return await db.select().from(transactions).where(eq(transactions.userId, ownerId));
   }
 
   async getTransactionsByDateRange(startDate: Date, endDate: Date, userId: number): Promise<Transaction[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     return await db
       .select()
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, userId),
+          eq(transactions.userId, ownerId),
           gte(transactions.transactionDate, startDate),
           lte(transactions.transactionDate, endDate)
         )
@@ -591,10 +600,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTransaction(id: number, userId: number): Promise<Transaction | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
     const [transaction] = await db
       .select()
       .from(transactions)
-      .where(and(eq(transactions.id, id), eq(transactions.userId, userId)));
+      .where(and(eq(transactions.id, id), eq(transactions.userId, ownerId)));
     return transaction || undefined;
   }
 
