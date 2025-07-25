@@ -1,9 +1,10 @@
 import { 
-  users, clients, services, professionals, appointments, transactions, professionalPermissions,
+  users, clients, services, professionals, appointments, transactions, professionalPermissions, aboutInfo, galleryImages,
   type User, type InsertUser, type Client, type InsertClient,
   type Service, type InsertService, type Professional, type InsertProfessional,
   type Appointment, type InsertAppointment, type Transaction, type InsertTransaction,
   type ProfessionalPermission, type InsertProfessionalPermission, type PermissionType,
+  type AboutInfo, type InsertAboutInfo, type GalleryImage, type InsertGalleryImage,
   PERMISSIONS
 } from "@shared/schema";
 import { db } from "./db";
@@ -90,6 +91,20 @@ export interface IStorage {
     serviceId: number;
     appointmentDate: Date;
   }): Promise<any>;
+
+  // About info methods
+  getAboutInfo(userId: number): Promise<AboutInfo | undefined>;
+  createAboutInfo(aboutInfo: InsertAboutInfo, userId: number): Promise<AboutInfo>;
+  updateAboutInfo(aboutInfo: Partial<InsertAboutInfo>, userId: number): Promise<AboutInfo | undefined>;
+  getPublicAboutInfo(): Promise<AboutInfo | undefined>;
+
+  // Gallery methods
+  getGalleryImages(userId: number): Promise<GalleryImage[]>;
+  getGalleryImage(id: number, userId: number): Promise<GalleryImage | undefined>;
+  createGalleryImage(image: InsertGalleryImage, userId: number): Promise<GalleryImage>;
+  updateGalleryImage(id: number, image: Partial<InsertGalleryImage>, userId: number): Promise<GalleryImage | undefined>;
+  deleteGalleryImage(id: number, userId: number): Promise<boolean>;
+  getPublicGalleryImages(category?: string): Promise<GalleryImage[]>;
 
   sessionStore: session.Store;
 }
@@ -1113,6 +1128,87 @@ export class DatabaseStorage implements IStorage {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  }
+
+  // About info methods
+  async getAboutInfo(userId: number): Promise<AboutInfo | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const [info] = await db.select().from(aboutInfo).where(eq(aboutInfo.userId, ownerId));
+    return info || undefined;
+  }
+
+  async createAboutInfo(info: InsertAboutInfo, userId: number): Promise<AboutInfo> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const [created] = await db.insert(aboutInfo).values({
+      ...info,
+      userId: ownerId,
+    }).returning();
+    return created;
+  }
+
+  async updateAboutInfo(info: Partial<InsertAboutInfo>, userId: number): Promise<AboutInfo | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const [updated] = await db.update(aboutInfo).set({
+      ...info,
+      updatedAt: new Date(),
+    }).where(eq(aboutInfo.userId, ownerId)).returning();
+    return updated || undefined;
+  }
+
+  async getPublicAboutInfo(): Promise<AboutInfo | undefined> {
+    const [info] = await db.select().from(aboutInfo).limit(1);
+    return info || undefined;
+  }
+
+  // Gallery methods
+  async getGalleryImages(userId: number): Promise<GalleryImage[]> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    return await db.select().from(galleryImages)
+      .where(eq(galleryImages.userId, ownerId))
+      .orderBy(desc(galleryImages.createdAt));
+  }
+
+  async getGalleryImage(id: number, userId: number): Promise<GalleryImage | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const [image] = await db.select().from(galleryImages)
+      .where(and(eq(galleryImages.id, id), eq(galleryImages.userId, ownerId)));
+    return image || undefined;
+  }
+
+  async createGalleryImage(image: InsertGalleryImage, userId: number): Promise<GalleryImage> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const [created] = await db.insert(galleryImages).values({
+      ...image,
+      userId: ownerId,
+    }).returning();
+    return created;
+  }
+
+  async updateGalleryImage(id: number, image: Partial<InsertGalleryImage>, userId: number): Promise<GalleryImage | undefined> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const [updated] = await db.update(galleryImages).set(image)
+      .where(and(eq(galleryImages.id, id), eq(galleryImages.userId, ownerId)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteGalleryImage(id: number, userId: number): Promise<boolean> {
+    const ownerId = await this.getEffectiveOwnerId(userId);
+    const result = await db.delete(galleryImages)
+      .where(and(eq(galleryImages.id, id), eq(galleryImages.userId, ownerId)));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getPublicGalleryImages(category?: string): Promise<GalleryImage[]> {
+    if (category) {
+      return await db.select().from(galleryImages)
+        .where(and(eq(galleryImages.isActive, true), eq(galleryImages.category, category)))
+        .orderBy(desc(galleryImages.createdAt));
+    }
+    
+    return await db.select().from(galleryImages)
+      .where(eq(galleryImages.isActive, true))
+      .orderBy(desc(galleryImages.createdAt));
   }
 }
 

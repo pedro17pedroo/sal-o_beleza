@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { insertClientSchema, insertServiceSchema, insertProfessionalSchema, insertAppointmentSchema, insertTransactionSchema } from "@shared/schema";
+import { insertClientSchema, insertServiceSchema, insertProfessionalSchema, insertAppointmentSchema, insertTransactionSchema, insertAboutInfoSchema, insertGalleryImageSchema } from "@shared/schema";
 
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
@@ -717,6 +717,103 @@ export function registerRoutes(app: Express): Server {
       res.status(201).json(booking);
     } catch (error: any) {
       res.status(400).json({ message: error.message || "Failed to create booking" });
+    }
+  });
+
+  // About info routes
+  app.get("/api/about", requireAuth, async (req: any, res) => {
+    try {
+      const aboutInfo = await storage.getAboutInfo(req.user.id);
+      res.json(aboutInfo);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch about info" });
+    }
+  });
+
+  app.post("/api/about", requireAuth, async (req: any, res) => {
+    try {
+      const validatedData = insertAboutInfoSchema.parse(req.body);
+      const aboutInfo = await storage.createAboutInfo(validatedData, req.user.id);
+      res.status(201).json(aboutInfo);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to create about info" });
+    }
+  });
+
+  app.put("/api/about", requireAuth, async (req: any, res) => {
+    try {
+      const validatedData = insertAboutInfoSchema.parse(req.body);
+      const aboutInfo = await storage.updateAboutInfo(validatedData, req.user.id);
+      res.json(aboutInfo);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to update about info" });
+    }
+  });
+
+  // Gallery routes
+  app.get("/api/gallery", requireAuth, async (req: any, res) => {
+    try {
+      const images = await storage.getGalleryImages(req.user.id);
+      res.json(images);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch gallery images" });
+    }
+  });
+
+  app.post("/api/gallery", requireAuth, async (req: any, res) => {
+    try {
+      const validatedData = insertGalleryImageSchema.parse(req.body);
+      const image = await storage.createGalleryImage(validatedData, req.user.id);
+      res.status(201).json(image);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to create gallery image" });
+    }
+  });
+
+  app.put("/api/gallery/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertGalleryImageSchema.parse(req.body);
+      const image = await storage.updateGalleryImage(id, validatedData, req.user.id);
+      if (!image) {
+        return res.status(404).json({ message: "Image not found" });
+      }
+      res.json(image);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Failed to update gallery image" });
+    }
+  });
+
+  app.delete("/api/gallery/:id", requireAuth, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteGalleryImage(id, req.user.id);
+      if (!success) {
+        return res.status(404).json({ message: "Image not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete gallery image" });
+    }
+  });
+
+  // Public routes for about and gallery
+  app.get("/api/public/about", async (req: any, res) => {
+    try {
+      const aboutInfo = await storage.getPublicAboutInfo();
+      res.json(aboutInfo);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch about info" });
+    }
+  });
+
+  app.get("/api/public/gallery", async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const images = await storage.getPublicGalleryImages(category);
+      res.json(images);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch gallery images" });
     }
   });
 

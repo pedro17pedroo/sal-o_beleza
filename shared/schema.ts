@@ -83,6 +83,31 @@ export const professionalPermissions = pgTable("professional_permissions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const aboutInfo = pgTable("about_info", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  services: text("services").notNull(), // JSON string with services information
+  phone: varchar("phone", { length: 20 }),
+  email: text("email"),
+  address: text("address"),
+  workingHours: text("working_hours"), // JSON string with working hours
+  userId: integer("user_id").notNull().references(() => users.id),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const galleryImages = pgTable("gallery_images", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url").notNull(),
+  category: text("category").notNull().default("general"), // general, hair, nails, facial, etc.
+  isActive: boolean("is_active").notNull().default(true),
+  userId: integer("user_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   clients: many(clients),
@@ -161,6 +186,20 @@ export const professionalPermissionsRelations = relations(professionalPermission
   }),
 }));
 
+export const aboutInfoRelations = relations(aboutInfo, ({ one }) => ({
+  user: one(users, {
+    fields: [aboutInfo.userId],
+    references: [users.id],
+  }),
+}));
+
+export const galleryImagesRelations = relations(galleryImages, ({ one }) => ({
+  user: one(users, {
+    fields: [galleryImages.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -223,6 +262,19 @@ export const insertProfessionalPermissionSchema = createInsertSchema(professiona
   createdAt: true,
 });
 
+export const insertAboutInfoSchema = createInsertSchema(aboutInfo).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertGalleryImageSchema = createInsertSchema(galleryImages).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -238,6 +290,10 @@ export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type ProfessionalPermission = typeof professionalPermissions.$inferSelect;
 export type InsertProfessionalPermission = z.infer<typeof insertProfessionalPermissionSchema>;
+export type AboutInfo = typeof aboutInfo.$inferSelect;
+export type InsertAboutInfo = z.infer<typeof insertAboutInfoSchema>;
+export type GalleryImage = typeof galleryImages.$inferSelect;
+export type InsertGalleryImage = z.infer<typeof insertGalleryImageSchema>;
 
 // Permission types enum
 export const PERMISSIONS = {

@@ -31,7 +31,7 @@ export default function AppointmentsCalendar() {
         start.setHours(0, 0, 0, 0);
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
-        console.log('Weekly range:', { start: start.toISOString(), end: end.toISOString() });
+
         break;
       case "monthly":
         start.setDate(1);
@@ -55,12 +55,9 @@ export default function AppointmentsCalendar() {
     queryKey: ["/api/appointments", view, currentDate.toDateString()],
     queryFn: async () => {
       const { start, end } = getDateRange();
-      console.log(`Fetching appointments for ${view} from ${start.toISOString()} to ${end.toISOString()}`);
       const response = await fetch(`/api/appointments?startDate=${start.toISOString()}&endDate=${end.toISOString()}`);
       if (!response.ok) throw new Error('Failed to fetch appointments');
-      const data = await response.json();
-      console.log(`Received ${Array.isArray(data) ? data.length : 0} appointments:`, data);
-      return data;
+      return response.json();
     },
   });
 
@@ -73,7 +70,7 @@ export default function AppointmentsCalendar() {
 
   const afternoonAppointments = appointmentsList.filter((apt: any) => {
     const hour = new Date(apt.date).getHours();
-    return hour >= 13 && hour < 24; // Include all afternoon and evening appointments
+    return hour >= 13 && hour < 24;
   });
 
   const formatTime = (dateString: string) => {

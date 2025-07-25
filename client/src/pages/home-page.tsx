@@ -7,8 +7,10 @@ import ServicesManager from "@/components/services-manager";
 import ProfessionalsManager from "@/components/professionals-manager";
 import AppointmentsCalendar from "@/components/appointments-calendar";
 import CashFlowManager from "@/components/cash-flow-manager";
+import AboutPage from "./about-page";
+import GalleryPage from "./gallery-page";
 
-type View = "dashboard" | "appointments" | "clients" | "services" | "professionals" | "cashflow";
+type View = "dashboard" | "appointments" | "clients" | "services" | "professionals" | "cashflow" | "about" | "gallery";
 
 export default function HomePage() {
   const [currentView, setCurrentView] = useState<View>("dashboard");
@@ -28,6 +30,10 @@ export default function HomePage() {
         return <ProfessionalsManager />;
       case "cashflow":
         return <CashFlowManager />;
+      case "about":
+        return <AboutPage />;
+      case "gallery":
+        return <GalleryPage />;
       default:
         return <Dashboard />;
     }
